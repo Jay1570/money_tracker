@@ -1,6 +1,7 @@
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:go_router/go_router.dart";
+import "package:money_tracker/core/providers/repository_providers.dart";
 import "package:money_tracker/core/router.dart";
 import "package:money_tracker/core/theme/app_theme.dart";
 import "package:money_tracker/core/theme/text_theme.dart";
@@ -13,7 +14,16 @@ void main() async {
 
   GoRouter.optionURLReflectsImperativeAPIs = true;
 
-  runApp(const ProviderScope(child: App()));
+  final container = ProviderContainer();
+
+  await container.read(appStartupServiceProvider).initialize();
+
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
+      child: const App(),
+    ),
+  );
 }
 
 class App extends ConsumerWidget {
@@ -23,13 +33,16 @@ class App extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = createTextTheme(context, "Roboto", "Roboto");
 
+    const themeColor = Color(0xFFFFD54F);
+
     return MaterialApp.router(
-      theme: AppTheme.light(Color(0xFF2563EB), textTheme),
-      darkTheme: AppTheme.dark(Color(0xFF2563EB), textTheme),
+      theme: AppTheme.light(themeColor, textTheme),
+      darkTheme: AppTheme.dark(themeColor, textTheme),
       themeMode: ThemeMode.dark,
       scaffoldMessengerKey: rootScaffoldMessengerKey,
       routerConfig: ref.watch(routerProvider),
       debugShowCheckedModeBanner: false,
+
     );
   }
 }

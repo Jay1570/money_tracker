@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AppTextField extends StatefulWidget {
   const AppTextField({
@@ -20,7 +21,7 @@ class AppTextField extends StatefulWidget {
     this.onFieldSubmitted,
     this.outlineBorder,
     this.isRequired = false,
-    this.errorText,
+    this.errorText,this.formatters,
   });
 
   final String value;
@@ -49,6 +50,7 @@ class AppTextField extends StatefulWidget {
   final String? errorText;
 
   final bool isRequired;
+  final List<TextInputFormatter>? formatters; 
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -121,6 +123,7 @@ class _AppTextFieldState extends State<AppTextField> {
           focusNode: widget.focusNode,
           keyboardType: widget.keyboardType,
           textInputAction: widget.textInputAction,
+          inputFormatters: widget.formatters,
           obscureText: widget.obscureText,
           enabled: widget.enabled,
           maxLines: widget.obscureText ? 1 : widget.maxLines,

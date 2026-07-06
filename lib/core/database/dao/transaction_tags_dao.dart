@@ -22,8 +22,8 @@ class TransactionTagsDao extends DatabaseAccessor<AppDatabase>
     ])..where(transactionTags.transactionId.equals(transactionId));
 
     return query.watch().map(
-          (rows) => rows.map((row) => row.readTable(tags)).toList(),
-        );
+      (rows) => rows.map((row) => row.readTable(tags)).toList(),
+    );
   }
 
   Future<List<Tag>> getTagsForTransaction(int transactionId) {
@@ -35,8 +35,8 @@ class TransactionTagsDao extends DatabaseAccessor<AppDatabase>
     ])..where(transactionTags.transactionId.equals(transactionId));
 
     return query.get().then(
-          (rows) => rows.map((row) => row.readTable(tags)).toList(),
-        );
+      (rows) => rows.map((row) => row.readTable(tags)).toList(),
+    );
   }
 
   /// All transactions linked to a given tag.
@@ -49,8 +49,16 @@ class TransactionTagsDao extends DatabaseAccessor<AppDatabase>
     ])..where(transactionTags.tagId.equals(tagId));
 
     return query.watch().map(
-          (rows) => rows.map((row) => row.readTable(transactions)).toList(),
-        );
+      (rows) => rows.map((row) => row.readTable(transactions)).toList(),
+    );
+  }
+
+  /// Remove all transaction links for a given tag (e.g. before deleting
+  /// the tag itself, since the join table has no cascading delete).
+  Future<int> clearLinksForTag(int tagId) {
+    return (delete(
+      transactionTags,
+    )..where((tt) => tt.tagId.equals(tagId))).go();
   }
 
   Future<int> addTagToTransaction(int transactionId, int tagId) {
@@ -64,20 +72,18 @@ class TransactionTagsDao extends DatabaseAccessor<AppDatabase>
   }
 
   Future<int> removeTagFromTransaction(int transactionId, int tagId) {
-    return (delete(transactionTags)
-          ..where(
-            (tt) =>
-                tt.transactionId.equals(transactionId) &
-                tt.tagId.equals(tagId),
-          ))
+    return (delete(transactionTags)..where(
+          (tt) =>
+              tt.transactionId.equals(transactionId) & tt.tagId.equals(tagId),
+        ))
         .go();
   }
 
   /// Remove all tag links for a transaction (e.g. before re-assigning tags).
   Future<int> clearTagsForTransaction(int transactionId) {
-    return (delete(transactionTags)
-          ..where((tt) => tt.transactionId.equals(transactionId)))
-        .go();
+    return (delete(
+      transactionTags,
+    )..where((tt) => tt.transactionId.equals(transactionId))).go();
   }
 
   /// Replace all tags for a transaction with the given tag ids.

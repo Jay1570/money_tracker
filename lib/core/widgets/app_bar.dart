@@ -1,47 +1,61 @@
 import 'package:flutter/material.dart';
 
-class MoneyTrackerAppBar extends StatelessWidget
-    implements PreferredSizeWidget {
-  const MoneyTrackerAppBar({
+class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
+  const AppTopBar({
     super.key,
     required this.title,
-    this.actions,
-    this.leading,
-    this.bottom,
-    this.centerTitle = false,
+    this.onMenuTap,
+    this.onSearchTap,
+    this.onCalendarTap,
+    required this.showMenu,
+    required this.showSearch,
+    required this.showCalendar,
   });
 
   final String title;
-  final List<Widget>? actions;
-  final Widget? leading;
-  final PreferredSizeWidget? bottom;
-  final bool centerTitle;
-
-  @override
-  Size get preferredSize =>
-      Size.fromHeight(kToolbarHeight + (bottom?.preferredSize.height ?? 0));
+  final VoidCallback? onMenuTap;
+  final VoidCallback? onSearchTap;
+  final VoidCallback? onCalendarTap;
+  final bool showMenu;
+  final bool showSearch;
+  final bool showCalendar;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final colors = Theme.of(context).colorScheme;
 
     return AppBar(
-      backgroundColor: colorScheme.surface,
-      surfaceTintColor: Colors.transparent,
       elevation: 0,
-      scrolledUnderElevation: 1,
-      centerTitle: centerTitle,
-      leading: leading,
+      centerTitle: true,
+      backgroundColor: colors.surfaceContainer,
+      leading: showMenu
+          ? IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: onMenuTap,
+            )
+          : null,
       title: Text(
         title,
-        style: textTheme.headlineMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: colorScheme.onSurface,
+        style: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 24,
         ),
       ),
-      actions: actions,
-      bottom: bottom,
+      actions: [
+        if (showSearch)
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: onSearchTap,
+          ),
+        if (showCalendar)
+          IconButton(
+            icon: const Icon(Icons.calendar_today_outlined),
+            onPressed: onCalendarTap,
+          ),
+      ],
     );
   }
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }

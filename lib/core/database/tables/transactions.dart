@@ -10,6 +10,7 @@ class Transactions extends Table {
 
   IntColumn get type => intEnum<TransactionType>()();
 
+  @ReferenceName("account")
   IntColumn get accountId => integer().references(Accounts, #id)();
 
   IntColumn get categoryId =>

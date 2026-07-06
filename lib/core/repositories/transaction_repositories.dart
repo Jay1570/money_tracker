@@ -41,7 +41,7 @@ class TransactionsRepository {
     );
   }
 
-  Future<int> transfer({
+  Future<int> addTransfer({
     required double amount,
     required int accountId,
     required int categoryId,
@@ -120,21 +120,36 @@ class TransactionsRepository {
   }
 
   /// Deletes a transaction, reverses its effect on account balance(s),
-  /// and cleans up any dependent rows (tag links, recurring schedule)
-  /// that reference it.
-  Future<void> deleteTransaction(int transactionId) async {
+  /// and cleans up any dependent rows (tag links) that reference it.
+  ///
+  /// If this transaction is the template for a recurring series, deleting
+  /// it would silently cancel all future occurrences — so that's refused
+  /// unless [cancelRecurringSeries] is explicitly set to `true`.
+  Future<void> deleteTransaction(
+    int transactionId, {
+    bool cancelRecurringSeries = false,
+  }) async {
     await _db.transaction(() async {
       final existing = await _db.transactionsDao.getTransactionById(
         transactionId,
       );
       if (existing == null) return;
 
+      final recurring = await _db.recurringTransactionsDao
+          .getRecurringTransactionByTransactionId(transactionId);
+
+      if (recurring != null && !cancelRecurringSeries) {
+        throw StateError(
+          'Transaction $transactionId is the template for a recurring '
+          'series (schedule ${recurring.id}). Deleting it would cancel all '
+          'future occurrences. Pass cancelRecurringSeries: true to confirm.',
+        );
+      }
+
       await _reverseBalanceEffect(existing);
 
       await _db.transactionTagsDao.clearTagsForTransaction(transactionId);
 
-      final recurring = await _db.recurringTransactionsDao
-          .getRecurringTransactionByTransactionId(transactionId);
       if (recurring != null) {
         await _db.recurringTransactionsDao.deleteRecurringTransaction(
           recurring.id,
@@ -142,6 +157,65 @@ class TransactionsRepository {
       }
 
       await _db.transactionsDao.deleteTransaction(transactionId);
+    });
+  }
+
+  /// Live total of a given transaction type, optionally scoped to a date
+  /// range — a thin pass-through used by reporting screens (e.g. this
+  /// month's income/expense totals) so the UI never has to reach into the
+  /// DAO layer directly.
+  Stream<double> watchTotalByType(
+    TransactionType type, {
+    DateTime? start,
+    DateTime? end,
+  }) {
+    return _db.transactionsDao.watchTotalByType(type, start: start, end: end);
+  }
+
+  /// Recomputes an account's `currentBalance` from scratch as
+  /// `initialBalance` plus the net effect of every transaction that
+  /// touches it. Useful for fixing drift after bulk edits/imports, or
+  /// as a periodic integrity check.
+  Future<void> recalculateAccountBalance(int accountId) async {
+    await _db.transaction(() async {
+      final account = await _db.accountsDao.getAccountById(accountId);
+      if (account == null) return;
+
+      final relatedTransactions = await _db.transactionsDao
+          .getTransactionsByAccount(accountId);
+
+      var balance = account.initialBalance;
+
+      final multiplier = account.type.isLiability ? -1 : 1;
+
+      for (final tx in relatedTransactions) {
+        switch (tx.type) {
+          case TransactionType.income:
+            if (tx.accountId == accountId) balance += multiplier * tx.amount;
+            break;
+
+          case TransactionType.expense:
+            if (tx.accountId == accountId) balance -= multiplier * tx.amount;
+            break;
+
+          case TransactionType.transfer:
+            if (tx.accountId == accountId) balance -= multiplier * tx.amount;
+            if (tx.transferAccountId == accountId) balance += multiplier * tx.amount;
+            break;
+        }
+      }
+
+      await _db.accountsDao.updateBalance(accountId, balance);
+    });
+  }
+
+  /// Recalculates every account's balance in a single transaction.
+  Future<void> recalculateAllBalances() async {
+    await _db.transaction(() async {
+      final accounts = await _db.accountsDao.getAllAccountsIncludingArchived();
+      for (final account in accounts) {
+        await recalculateAccountBalance(account.id);
+      }
     });
   }
 

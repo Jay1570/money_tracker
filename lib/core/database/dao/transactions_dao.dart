@@ -15,25 +15,38 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
 
   /// All transactions, most recent first.
   Stream<List<Transaction>> watchAllTransactions() {
-    return (select(transactions)
-          ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)]))
-        .watch();
+    return (select(
+      transactions,
+    )..orderBy([(t) => OrderingTerm.desc(t.transactionDate)])).watch();
   }
 
   Future<List<Transaction>> getAllTransactions() {
-    return (select(transactions)
-          ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)]))
-        .get();
+    return (select(
+      transactions,
+    )..orderBy([(t) => OrderingTerm.desc(t.transactionDate)])).get();
   }
 
   Stream<Transaction?> watchTransactionById(int id) {
-    return (select(transactions)..where((t) => t.id.equals(id)))
-        .watchSingleOrNull();
+    return (select(
+      transactions,
+    )..where((t) => t.id.equals(id))).watchSingleOrNull();
   }
 
   Future<Transaction?> getTransactionById(int id) {
-    return (select(transactions)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    return (select(
+      transactions,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
+  /// One-off (non-streamed) fetch of all transactions touching an account,
+  /// either as the source account or as the transfer destination.
+  Future<List<Transaction>> getTransactionsByAccount(int accountId) {
+    return (select(transactions)..where(
+          (t) =>
+              t.accountId.equals(accountId) |
+              t.transferAccountId.equals(accountId),
+        ))
+        .get();
   }
 
   Stream<List<Transaction>> watchTransactionsByAccount(int accountId) {
@@ -45,6 +58,12 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
           )
           ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)]))
         .watch();
+  }
+
+  Future<List<Transaction>> getTransactionsByCategory(int categoryId) {
+    return (select(
+      transactions,
+    )..where((t) => t.categoryId.equals(categoryId))).get();
   }
 
   Stream<List<Transaction>> watchTransactionsByCategory(int categoryId) {

@@ -25,4 +25,9 @@ class TimeUtils {
     if (diff.inDays < 365) return '${(diff.inDays / 30).floor()}mo';
     return '${(diff.inDays / 365).floor()}y';
   }
+
+  static const monthAbbreviations = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', //
+  ];
 }
