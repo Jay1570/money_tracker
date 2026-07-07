@@ -5,6 +5,7 @@ import 'package:money_tracker/core/database/tables/accounts.dart';
 import 'package:money_tracker/core/database/tables/categories.dart';
 import 'package:money_tracker/core/database/tables/enums.dart';
 import 'package:money_tracker/core/database/tables/transactions.dart';
+import 'package:money_tracker/core/models/transaction.dart';
 
 part 'transactions_dao.g.dart';
 
@@ -80,18 +81,51 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
         .watch();
   }
 
-  Stream<List<Transaction>> watchTransactionsInRange(
+  Stream<List<TransactionWithJoin>> watchTransactionsInRange(
     DateTime start,
     DateTime end,
   ) {
-    return (select(transactions)
+    final sourceAccount = alias(accounts, 'sourceAccount');
+    final transferAccount = alias(accounts, 'transferAccount');
+
+    final query =
+        select(transactions).join([
+            innerJoin(
+              categories,
+              categories.id.equalsExp(transactions.categoryId),
+            ),
+            innerJoin(
+              sourceAccount,
+              sourceAccount.id.equalsExp(transactions.accountId),
+            ),
+            leftOuterJoin(
+              transferAccount,
+              transferAccount.id.equalsExp(transactions.transferAccountId),
+            ),
+          ])
           ..where(
-            (t) =>
-                t.transactionDate.isBiggerOrEqualValue(start) &
-                t.transactionDate.isSmallerOrEqualValue(end),
+            transactions.transactionDate.isBiggerOrEqualValue(start) &
+                transactions.transactionDate.isSmallerOrEqualValue(end),
           )
-          ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)]))
-        .watch();
+          ..orderBy([OrderingTerm.desc(transactions.transactionDate)]);
+
+    return query.watch().map(
+      (rows) => rows
+          .map(
+            (row) => TransactionWithJoin(
+              id: row.readTable(transactions).id,
+              amount: row.readTable(transactions).amount,
+              type: row.readTable(transactions).type,
+              accountId: row.readTable(transactions).accountId,
+              transactionDate: row.readTable(transactions).transactionDate,
+              createdAt: row.readTable(transactions).createdAt,
+              account: row.readTable(sourceAccount),
+              category: row.readTable(categories),
+              transferAccount: row.readTableOrNull(transferAccount),
+            ),
+          )
+          .toList(),
+    );
   }
 
   /// Recent transactions, limited by [limit].

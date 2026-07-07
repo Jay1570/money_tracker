@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:money_tracker/core/database/app_database.dart';
 import 'package:money_tracker/core/database/tables/enums.dart';
+import 'package:money_tracker/core/models/transaction.dart';
 import 'package:money_tracker/core/providers/database_provider.dart';
 
 final selectedMonthProvider = NotifierProvider<SelectedMonthNotifier, DateTime>(
@@ -39,7 +39,7 @@ final monthRangeProvider = Provider<({DateTime start, DateTime end})>((ref) {
 });
 
 final monthlyTransactionsProvider =
-    StreamProvider.autoDispose<List<Transaction>>((ref) {
+    StreamProvider.autoDispose<List<TransactionWithJoin>>((ref) {
       final db = ref.watch(databaseProvider);
       final range = ref.watch(monthRangeProvider);
 

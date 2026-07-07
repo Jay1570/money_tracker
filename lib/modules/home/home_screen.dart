@@ -86,7 +86,11 @@ class _HomeBody extends ConsumerWidget {
                   final tx = items[index];
 
                   return ListTile(
-                    title: Text(tx.note ?? "Transaction"),
+                    title: Text(
+                      tx.transferAccount != null
+                          ? "${tx.account.name} -> ${tx.transferAccount!.name}"
+                          : tx.category.name,
+                    ),
                     subtitle: Text(tx.transactionDate.toString()),
                     trailing: Text(
                       tx.amount.toStringAsFixed(2),
