@@ -11,6 +11,9 @@ class AccountsRepository {
 
   Stream<Account?> watchAccount(int id) => _db.accountsDao.watchAccountById(id);
 
+  /// One-shot lookup, e.g. for resolving a recurring schedule's account.
+  Future<Account?> getAccount(int id) => _db.accountsDao.getAccountById(id);
+
   Stream<double> watchNetWorth() => _db.accountsDao.watchTotalBalance();
 
   /// Creates a new account. `currentBalance` always starts out equal to

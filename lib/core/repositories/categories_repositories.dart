@@ -10,6 +10,10 @@ class CategoriesRepository {
   Stream<List<Category>> watchCategories() =>
       _db.categoriesDao.watchAllCategories();
 
+  /// One-shot lookup, e.g. for resolving a recurring schedule's category.
+  Future<Category?> getCategory(int id) =>
+      _db.categoriesDao.getCategoryById(id);
+
   Stream<List<Category>> watchCategoriesByType(CategoryType type) =>
       _db.categoriesDao.watchCategoriesByType(type);
 

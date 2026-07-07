@@ -172,6 +172,12 @@ class TransactionsRepository {
     return _db.transactionsDao.watchTotalByType(type, start: start, end: end);
   }
 
+  /// Fetches a single transaction by id — a thin pass-through used to
+  /// resolve a recurring schedule's template transaction for display.
+  Future<Transaction?> getTransactionById(int id) {
+    return _db.transactionsDao.getTransactionById(id);
+  }
+
   /// Recomputes an account's `currentBalance` from scratch as
   /// `initialBalance` plus the net effect of every transaction that
   /// touches it. Useful for fixing drift after bulk edits/imports, or

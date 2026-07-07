@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:money_tracker/core/database/app_database.dart';
 import 'package:money_tracker/core/database/tables/enums.dart';
+import 'package:money_tracker/core/utils/account_type.dart';
 import 'package:money_tracker/core/utils/currency_format.dart';
 import 'package:money_tracker/core/utils/time_utils.dart';
 import 'package:money_tracker/core/widgets/app_bar.dart';
@@ -380,7 +381,7 @@ class _AccountGroupHeader extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            _accountTypeLabel(type),
+            accountTypeLabel(type),
             style: const TextStyle(color: Colors.white54),
           ),
           Text(
@@ -417,7 +418,7 @@ class _AccountTile extends StatelessWidget {
               color: colors.primary,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(_accountTypeIcon(account.type), color: Colors.black),
+            child: Icon(accountTypeIcon(account.type), color: Colors.black),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -435,7 +436,7 @@ class _AccountTile extends StatelessWidget {
                   style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
               Text(
-                '$currency ${formatAmount(account.currentBalance.abs())}',
+                '$currency ${formatAmount(account.currentBalance)}',
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ],
@@ -445,39 +446,5 @@ class _AccountTile extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-String _accountTypeLabel(AccountType type) {
-  switch (type) {
-    case AccountType.cash:
-      return 'Cash';
-    case AccountType.bank:
-      return 'Bank';
-    case AccountType.creditCard:
-      return 'Credit Card';
-    case AccountType.investment:
-      return 'Investment';
-    case AccountType.loan:
-      return 'Loan';
-    case AccountType.asset:
-      return 'Asset';
-  }
-}
-
-IconData _accountTypeIcon(AccountType type) {
-  switch (type) {
-    case AccountType.cash:
-      return Icons.payments;
-    case AccountType.bank:
-      return Icons.account_balance;
-    case AccountType.creditCard:
-      return Icons.credit_card;
-    case AccountType.investment:
-      return Icons.show_chart;
-    case AccountType.loan:
-      return Icons.request_quote;
-    case AccountType.asset:
-      return Icons.home_work;
   }
 }

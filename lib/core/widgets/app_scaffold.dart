@@ -11,14 +11,12 @@ class AppScaffold extends StatelessWidget {
     this.appBar,
     this.showBottomBar = true,
     this.showFabButton = true,
-    this.onFabPressed,
   });
 
   final Widget body;
   final PreferredSizeWidget? appBar;
   final bool showBottomBar;
   final bool showFabButton;
-  final VoidCallback? onFabPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +45,7 @@ class AppScaffold extends StatelessWidget {
               backgroundColor: theme.primary,
               foregroundColor: theme.onPrimary,
               shape: const CircleBorder(),
-              onPressed: onFabPressed,
+              onPressed: () => context.push("/transaction/add"),
               child: const Icon(Icons.add, size: 36),
             )
           : null,
