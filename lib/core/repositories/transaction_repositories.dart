@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:money_tracker/core/database/app_database.dart';
 import 'package:money_tracker/core/database/tables/enums.dart';
+import 'package:money_tracker/core/models/transaction.dart';
 
 class TransactionsRepository {
   const TransactionsRepository(this._db);
@@ -172,9 +173,10 @@ class TransactionsRepository {
     return _db.transactionsDao.watchTotalByType(type, start: start, end: end);
   }
 
-  /// Fetches a single transaction by id — a thin pass-through used to
-  /// resolve a recurring schedule's template transaction for display.
-  Future<Transaction?> getTransactionById(int id) {
+  /// Fetches a single transaction by id, joined with its account(s) and
+  /// category — a thin pass-through used to resolve a recurring
+  /// schedule's template transaction for display.
+  Future<TransactionWithJoin?> getTransactionById(int id) {
     return _db.transactionsDao.getTransactionById(id);
   }
 

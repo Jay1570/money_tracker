@@ -52,7 +52,8 @@ class RecurringTransactionsScreen extends ConsumerWidget {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    onPressed: () => context.push('/transaction/add'),
+                    onPressed: () =>
+                        context.push('/recurring-transactions/add'),
                     style: FilledButton.styleFrom(
                       backgroundColor: colors.primary,
                       foregroundColor: Colors.black,
@@ -101,10 +102,10 @@ class _RecurringTile extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
-        final isTransfer = details.transaction.type == TransactionType.transfer;
+        final isTransfer = details.type == TransactionType.transfer;
         final title = isTransfer
-            ? 'Transfer'
-            : (details.category?.name ?? 'Transaction');
+            ? '${details.account.name} -> ${details.transferAccount!.name}'
+            : (details.category?.name ?? details.account.name);
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -134,7 +135,7 @@ class _RecurringTile extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '$currency ${formatAmount(details.transaction.amount)}',
+                      '$currency ${formatAmount(details.amount)}',
                     ),
                     Row(
                       children: [
@@ -145,7 +146,7 @@ class _RecurringTile extends ConsumerWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '$currency ${formatAmount(details.transaction.amount)}',
+                          '$currency ${formatAmount(details.amount)}',
                         ),
                       ],
                     ),
@@ -153,7 +154,7 @@ class _RecurringTile extends ConsumerWidget {
                 )
               else
                 Text(
-                  formatAmount(details.transaction.amount),
+                  formatAmount(details.amount),
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 16,

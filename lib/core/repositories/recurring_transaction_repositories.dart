@@ -111,7 +111,7 @@ class RecurringTransactionsRepository {
       await _cloneTransaction(template, nextRun);
       created++;
 
-      nextRun = _advance(nextRun, recurring.frequency);
+      nextRun = nextRunAfter(nextRun, recurring.frequency);
       iterations++;
     }
 
@@ -166,7 +166,12 @@ class RecurringTransactionsRepository {
     }
   }
 
-  DateTime _advance(DateTime date, RecurringFrequency frequency) {
+  /// The next occurrence date after [date] for a given [frequency].
+  /// Public so callers (e.g. the Add Transaction screen) can compute the
+  /// initial `nextRun` when scheduling a new recurring series — the first
+  /// occurrence is the transaction itself, so the schedule's `nextRun`
+  /// should start one period after its date, not on it.
+  DateTime nextRunAfter(DateTime date, RecurringFrequency frequency) {
     switch (frequency) {
       case RecurringFrequency.daily:
         return date.add(const Duration(days: 1));

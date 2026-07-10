@@ -30,4 +30,7 @@ class TimeUtils {
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', //
   ];
+
+  static String monthYearLabel(DateTime date) =>
+      '${monthAbbreviations[date.month - 1]} ${date.year}';
 }

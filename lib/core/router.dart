@@ -50,6 +50,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: const RecurringTransactionsScreen(),
         ),
       ),
+      GoRoute(
+        path: "/recurring-transactions/add",
+        pageBuilder: (context, state) => buildSlidePage(
+          state: state,
+          child: const AddTransactionScreen(
+            isRecurring: true,
+          ),
+        ),
+      ),
 
       GoRoute(
         path: "/",

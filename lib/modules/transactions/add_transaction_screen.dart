@@ -14,7 +14,12 @@ import 'package:money_tracker/core/widgets/segmented_toggle.dart';
 import 'package:money_tracker/modules/transactions/add_transaction_provider.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
-  const AddTransactionScreen({super.key});
+  const AddTransactionScreen({
+    super.key,
+    this.isRecurring = false,
+  });
+
+  final bool isRecurring;
 
   @override
   ConsumerState<AddTransactionScreen> createState() =>
@@ -36,6 +41,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   String _note = '';
   DateTime _date = DateTime.now();
   bool _saving = false;
+
+  // Recurring toggle — when on, saving this transaction also schedules it
+  // as the template for a recurring series via
+  // RecurringTransactionsRepository.scheduleRecurring.
+  RecurringFrequency _frequency = RecurringFrequency.monthly;
 
   // Transfers don't have their own CategoryType in the schema (only
   // income/expense exist), so the transfer tab reuses the expense
@@ -138,6 +148,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       _currentInput = '0';
       _accumulated = 0;
       _pendingOp = null;
+      // Deliberately not resetting _isRecurring/_frequency — a recurring
+      // intent set before switching tabs is still reasonable to keep.
     });
   }
 
@@ -184,9 +196,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     final note = _note.trim().isEmpty ? null : _note.trim();
 
     try {
+      late final int transactionId;
+
       switch (_type) {
         case TransactionType.expense:
-          await repo.addExpense(
+          transactionId = await repo.addExpense(
             amount: amount,
             accountId: account.id,
             categoryId: category.id,
@@ -195,7 +209,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
           );
           break;
         case TransactionType.income:
-          await repo.addIncome(
+          transactionId = await repo.addIncome(
             amount: amount,
             accountId: account.id,
             categoryId: category.id,
@@ -204,7 +218,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
           );
           break;
         case TransactionType.transfer:
-          await repo.addTransfer(
+          transactionId = await repo.addTransfer(
             amount: amount,
             accountId: account.id,
             categoryId: category.id,
@@ -214,6 +228,18 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
           );
           break;
       }
+
+      if (widget.isRecurring) {
+        final recurringRepo = ref.read(recurringTransactionsRepositoryProvider);
+        await recurringRepo.scheduleRecurring(
+          templateTransactionId: transactionId,
+          frequency: _frequency,
+          nextRun: recurringRepo.nextRunAfter(_date, _frequency),
+        );
+
+        await recurringRepo.processDueRecurringTransactions();
+      }
+
       if (mounted) context.pop();
     } catch (e) {
       if (mounted) {
@@ -300,12 +326,17 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                         note: _note,
                         saving: _saving,
                         dateLabel: _dateLabel(_date),
+                        isRecurring: widget.isRecurring,
+                        frequency: _frequency,
                         onKeypadKey: _onKeypadKey,
                         onDateTap: _pickDate,
                         onNoteChanged: (v) => _note = v,
                         onConfirm: _save,
                         onChangeSourceAccount: _changeSourceAccount,
                         onChangeTransferAccount: _changeTransferAccount,
+                        onFrequencyChanged: _saving
+                            ? (_) {}
+                            : (f) => setState(() => _frequency = f),
                       ),
                     ),
                 ],
@@ -324,6 +355,21 @@ String _dateLabel(DateTime date) {
       date.year == now.year && date.month == now.month && date.day == now.day;
   if (isToday) return 'Today';
   return '${date.day}/${date.month}/${date.year}';
+}
+
+String _frequencyLabel(RecurringFrequency frequency) {
+  switch (frequency) {
+    case RecurringFrequency.daily:
+      return 'Daily';
+    case RecurringFrequency.weekly:
+      return 'Weekly';
+    case RecurringFrequency.monthly:
+      return 'Monthly';
+    case RecurringFrequency.quarterly:
+      return 'Quarterly';
+    case RecurringFrequency.yearly:
+      return 'Yearly';
+  }
 }
 
 // --- Category grid --------------------------------------------------------
@@ -350,7 +396,6 @@ class _CategoryGrid extends StatelessWidget {
       );
     }
 
-    const crossAxisCount = 4;
     const mainAxisSpacing = 20.0;
     const crossAxisSpacing = 12.0;
 
@@ -423,12 +468,15 @@ class _AmountEntryPanel extends StatelessWidget {
     required this.note,
     required this.saving,
     required this.dateLabel,
+    required this.isRecurring,
+    required this.frequency,
     required this.onKeypadKey,
     required this.onDateTap,
     required this.onNoteChanged,
     required this.onConfirm,
     required this.onChangeSourceAccount,
     required this.onChangeTransferAccount,
+    required this.onFrequencyChanged,
   });
 
   final TransactionType type;
@@ -438,12 +486,15 @@ class _AmountEntryPanel extends StatelessWidget {
   final String note;
   final bool saving;
   final String dateLabel;
+  final RecurringFrequency frequency;
+  final bool isRecurring;
   final ValueChanged<String> onKeypadKey;
   final VoidCallback onDateTap;
   final ValueChanged<String> onNoteChanged;
   final VoidCallback onConfirm;
   final VoidCallback onChangeSourceAccount;
   final VoidCallback onChangeTransferAccount;
+  final ValueChanged<RecurringFrequency> onFrequencyChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -521,13 +572,95 @@ class _AmountEntryPanel extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
+          _RecurringRow(
+            isRecurring: isRecurring,
+            frequency: frequency,
+            enabled: !saving,
+            onFrequencyChanged: onFrequencyChanged,
+          ),
+          const SizedBox(height: 8),
           NumericKeypad(
             onKeyTap: onKeypadKey,
             onDateTap: onDateTap,
             dateLabel: dateLabel,
             onConfirm: saving ? () {} : onConfirm,
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecurringRow extends StatelessWidget {
+  const _RecurringRow({
+    required this.isRecurring,
+    required this.frequency,
+    required this.onFrequencyChanged,
+    required this.enabled,
+  });
+
+  final bool isRecurring;
+  final bool enabled;
+  final RecurringFrequency frequency;
+  final ValueChanged<RecurringFrequency> onFrequencyChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xff2a2a2a),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.event_repeat, color: Colors.white54, size: 18),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Repeat', style: TextStyle(color: Colors.white70)),
+              ),
+              Switch(
+                value: isRecurring,
+                onChanged: null,
+                activeThumbColor: colors.primary,
+              ),
+            ],
+          ),
+          if (isRecurring)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (final option in RecurringFrequency.values)
+                    ChoiceChip(
+                      label: Text(_frequencyLabel(option)),
+                      selected: option == frequency,
+                      onSelected: enabled
+                          ? (_) => onFrequencyChanged(option)
+                          : null,
+                      selectedColor: colors.primary,
+                      labelStyle: TextStyle(
+                        color: option == frequency
+                            ? Colors.black
+                            : Colors.white70,
+                        fontWeight: option == frequency
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                      backgroundColor: const Color(0xff1c1c1c),
+                      side: BorderSide.none,
+                    ),
+                ],
+              ),
+            ),
         ],
       ),
     );

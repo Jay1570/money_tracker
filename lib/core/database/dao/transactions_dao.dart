@@ -15,70 +15,260 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
   TransactionsDao(super.db);
 
   /// All transactions, most recent first.
-  Stream<List<Transaction>> watchAllTransactions() {
-    return (select(
-      transactions,
-    )..orderBy([(t) => OrderingTerm.desc(t.transactionDate)])).watch();
+  Stream<List<TransactionWithJoin>> watchAllTransactions() {
+    final sourceAccount = alias(accounts, 'sourceAccount');
+    final transferAccountTable = alias(accounts, 'transferAccount');
+
+    final query = select(transactions).join([
+      leftOuterJoin(
+        categories,
+        categories.id.equalsExp(transactions.categoryId),
+      ),
+      innerJoin(
+        sourceAccount,
+        sourceAccount.id.equalsExp(transactions.accountId),
+      ),
+      leftOuterJoin(
+        transferAccountTable,
+        transferAccountTable.id.equalsExp(transactions.transferAccountId),
+      ),
+    ])..orderBy([OrderingTerm.desc(transactions.transactionDate)]);
+
+    return query.watch().map(
+      (rows) => rows
+          .map((row) => _mapRow(row, sourceAccount, transferAccountTable))
+          .toList(),
+    );
   }
 
-  Future<List<Transaction>> getAllTransactions() {
-    return (select(
-      transactions,
-    )..orderBy([(t) => OrderingTerm.desc(t.transactionDate)])).get();
+  Future<List<TransactionWithJoin>> getAllTransactions() {
+    final sourceAccount = alias(accounts, 'sourceAccount');
+    final transferAccountTable = alias(accounts, 'transferAccount');
+
+    final query = select(transactions).join([
+      leftOuterJoin(
+        categories,
+        categories.id.equalsExp(transactions.categoryId),
+      ),
+      innerJoin(
+        sourceAccount,
+        sourceAccount.id.equalsExp(transactions.accountId),
+      ),
+      leftOuterJoin(
+        transferAccountTable,
+        transferAccountTable.id.equalsExp(transactions.transferAccountId),
+      ),
+    ])..orderBy([OrderingTerm.desc(transactions.transactionDate)]);
+
+    return query.get().then(
+      (rows) => rows
+          .map((row) => _mapRow(row, sourceAccount, transferAccountTable))
+          .toList(),
+    );
   }
 
-  Stream<Transaction?> watchTransactionById(int id) {
-    return (select(
-      transactions,
-    )..where((t) => t.id.equals(id))).watchSingleOrNull();
+  Stream<TransactionWithJoin?> watchTransactionById(int id) {
+    final sourceAccount = alias(accounts, 'sourceAccount');
+    final transferAccountTable = alias(accounts, 'transferAccount');
+
+    final query = select(transactions).join([
+      leftOuterJoin(
+        categories,
+        categories.id.equalsExp(transactions.categoryId),
+      ),
+      innerJoin(
+        sourceAccount,
+        sourceAccount.id.equalsExp(transactions.accountId),
+      ),
+      leftOuterJoin(
+        transferAccountTable,
+        transferAccountTable.id.equalsExp(transactions.transferAccountId),
+      ),
+    ])..where(transactions.id.equals(id));
+
+    return query.watchSingleOrNull().map(
+      (row) => row == null
+          ? null
+          : _mapRow(row, sourceAccount, transferAccountTable),
+    );
   }
 
-  Future<Transaction?> getTransactionById(int id) {
-    return (select(
-      transactions,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
+  Future<TransactionWithJoin?> getTransactionById(int id) {
+    final sourceAccount = alias(accounts, 'sourceAccount');
+    final transferAccountTable = alias(accounts, 'transferAccount');
+
+    final query = select(transactions).join([
+      leftOuterJoin(
+        categories,
+        categories.id.equalsExp(transactions.categoryId),
+      ),
+      innerJoin(
+        sourceAccount,
+        sourceAccount.id.equalsExp(transactions.accountId),
+      ),
+      leftOuterJoin(
+        transferAccountTable,
+        transferAccountTable.id.equalsExp(transactions.transferAccountId),
+      ),
+    ])..where(transactions.id.equals(id));
+
+    return query.getSingleOrNull().then(
+      (row) => row == null
+          ? null
+          : _mapRow(row, sourceAccount, transferAccountTable),
+    );
   }
 
   /// One-off (non-streamed) fetch of all transactions touching an account,
   /// either as the source account or as the transfer destination.
-  Future<List<Transaction>> getTransactionsByAccount(int accountId) {
-    return (select(transactions)..where(
-          (t) =>
-              t.accountId.equals(accountId) |
-              t.transferAccountId.equals(accountId),
-        ))
-        .get();
+  Future<List<TransactionWithJoin>> getTransactionsByAccount(int accountId) {
+    final sourceAccount = alias(accounts, 'sourceAccount');
+    final transferAccountTable = alias(accounts, 'transferAccount');
+
+    final query =
+        select(transactions).join([
+          leftOuterJoin(
+            categories,
+            categories.id.equalsExp(transactions.categoryId),
+          ),
+          innerJoin(
+            sourceAccount,
+            sourceAccount.id.equalsExp(transactions.accountId),
+          ),
+          leftOuterJoin(
+            transferAccountTable,
+            transferAccountTable.id.equalsExp(transactions.transferAccountId),
+          ),
+        ])..where(
+          transactions.accountId.equals(accountId) |
+              transactions.transferAccountId.equals(accountId),
+        );
+
+    return query.get().then(
+      (rows) => rows
+          .map((row) => _mapRow(row, sourceAccount, transferAccountTable))
+          .toList(),
+    );
   }
 
-  Stream<List<Transaction>> watchTransactionsByAccount(int accountId) {
-    return (select(transactions)
+  Stream<List<TransactionWithJoin>> watchTransactionsByAccount(int accountId) {
+    final sourceAccount = alias(accounts, 'sourceAccount');
+    final transferAccountTable = alias(accounts, 'transferAccount');
+
+    final query =
+        select(transactions).join([
+            leftOuterJoin(
+              categories,
+              categories.id.equalsExp(transactions.categoryId),
+            ),
+            innerJoin(
+              sourceAccount,
+              sourceAccount.id.equalsExp(transactions.accountId),
+            ),
+            leftOuterJoin(
+              transferAccountTable,
+              transferAccountTable.id.equalsExp(transactions.transferAccountId),
+            ),
+          ])
           ..where(
-            (t) =>
-                t.accountId.equals(accountId) |
-                t.transferAccountId.equals(accountId),
+            transactions.accountId.equals(accountId) |
+                transactions.transferAccountId.equals(accountId),
           )
-          ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)]))
-        .watch();
+          ..orderBy([OrderingTerm.desc(transactions.transactionDate)]);
+
+    return query.watch().map(
+      (rows) => rows
+          .map((row) => _mapRow(row, sourceAccount, transferAccountTable))
+          .toList(),
+    );
   }
 
-  Future<List<Transaction>> getTransactionsByCategory(int categoryId) {
-    return (select(
-      transactions,
-    )..where((t) => t.categoryId.equals(categoryId))).get();
+  Future<List<TransactionWithJoin>> getTransactionsByCategory(int categoryId) {
+    final sourceAccount = alias(accounts, 'sourceAccount');
+    final transferAccountTable = alias(accounts, 'transferAccount');
+
+    final query = select(transactions).join([
+      leftOuterJoin(
+        categories,
+        categories.id.equalsExp(transactions.categoryId),
+      ),
+      innerJoin(
+        sourceAccount,
+        sourceAccount.id.equalsExp(transactions.accountId),
+      ),
+      leftOuterJoin(
+        transferAccountTable,
+        transferAccountTable.id.equalsExp(transactions.transferAccountId),
+      ),
+    ])..where(transactions.categoryId.equals(categoryId));
+
+    return query.get().then(
+      (rows) => rows
+          .map((row) => _mapRow(row, sourceAccount, transferAccountTable))
+          .toList(),
+    );
   }
 
-  Stream<List<Transaction>> watchTransactionsByCategory(int categoryId) {
-    return (select(transactions)
-          ..where((t) => t.categoryId.equals(categoryId))
-          ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)]))
-        .watch();
+  Stream<List<TransactionWithJoin>> watchTransactionsByCategory(
+    int categoryId,
+  ) {
+    final sourceAccount = alias(accounts, 'sourceAccount');
+    final transferAccountTable = alias(accounts, 'transferAccount');
+
+    final query =
+        select(transactions).join([
+            leftOuterJoin(
+              categories,
+              categories.id.equalsExp(transactions.categoryId),
+            ),
+            innerJoin(
+              sourceAccount,
+              sourceAccount.id.equalsExp(transactions.accountId),
+            ),
+            leftOuterJoin(
+              transferAccountTable,
+              transferAccountTable.id.equalsExp(transactions.transferAccountId),
+            ),
+          ])
+          ..where(transactions.categoryId.equals(categoryId))
+          ..orderBy([OrderingTerm.desc(transactions.transactionDate)]);
+
+    return query.watch().map(
+      (rows) => rows
+          .map((row) => _mapRow(row, sourceAccount, transferAccountTable))
+          .toList(),
+    );
   }
 
-  Stream<List<Transaction>> watchTransactionsByType(TransactionType type) {
-    return (select(transactions)
-          ..where((t) => t.type.equalsValue(type))
-          ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)]))
-        .watch();
+  Stream<List<TransactionWithJoin>> watchTransactionsByType(
+    TransactionType type,
+  ) {
+    final sourceAccount = alias(accounts, 'sourceAccount');
+    final transferAccountTable = alias(accounts, 'transferAccount');
+
+    final query =
+        select(transactions).join([
+            leftOuterJoin(
+              categories,
+              categories.id.equalsExp(transactions.categoryId),
+            ),
+            innerJoin(
+              sourceAccount,
+              sourceAccount.id.equalsExp(transactions.accountId),
+            ),
+            leftOuterJoin(
+              transferAccountTable,
+              transferAccountTable.id.equalsExp(transactions.transferAccountId),
+            ),
+          ])
+          ..where(transactions.type.equalsValue(type))
+          ..orderBy([OrderingTerm.desc(transactions.transactionDate)]);
+
+    return query.watch().map(
+      (rows) => rows
+          .map((row) => _mapRow(row, sourceAccount, transferAccountTable))
+          .toList(),
+    );
   }
 
   Stream<List<TransactionWithJoin>> watchTransactionsInRange(
@@ -90,7 +280,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
 
     final query =
         select(transactions).join([
-            innerJoin(
+            leftOuterJoin(
               categories,
               categories.id.equalsExp(transactions.categoryId),
             ),
@@ -111,32 +301,43 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
 
     return query.watch().map(
       (rows) => rows
-          .map(
-            (row) => TransactionWithJoin(
-              id: row.readTable(transactions).id,
-              amount: row.readTable(transactions).amount,
-              type: row.readTable(transactions).type,
-              accountId: row.readTable(transactions).accountId,
-              transactionDate: row.readTable(transactions).transactionDate,
-              createdAt: row.readTable(transactions).createdAt,
-              account: row.readTable(sourceAccount),
-              category: row.readTable(categories),
-              transferAccount: row.readTableOrNull(transferAccount),
-            ),
-          )
+          .map((row) => _mapRow(row, sourceAccount, transferAccount))
           .toList(),
     );
   }
 
   /// Recent transactions, limited by [limit].
-  Stream<List<Transaction>> watchRecentTransactions({int limit = 10}) {
-    return (select(transactions)
-          ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)])
-          ..limit(limit))
-        .watch();
+  Stream<List<TransactionWithJoin>> watchRecentTransactions({int limit = 10}) {
+    final sourceAccount = alias(accounts, 'sourceAccount');
+    final transferAccountTable = alias(accounts, 'transferAccount');
+
+    final query =
+        select(transactions).join([
+            leftOuterJoin(
+              categories,
+              categories.id.equalsExp(transactions.categoryId),
+            ),
+            innerJoin(
+              sourceAccount,
+              sourceAccount.id.equalsExp(transactions.accountId),
+            ),
+            leftOuterJoin(
+              transferAccountTable,
+              transferAccountTable.id.equalsExp(transactions.transferAccountId),
+            ),
+          ])
+          ..orderBy([OrderingTerm.desc(transactions.transactionDate)])
+          ..limit(limit);
+
+    return query.watch().map(
+      (rows) => rows
+          .map((row) => _mapRow(row, sourceAccount, transferAccountTable))
+          .toList(),
+    );
   }
 
   /// Sum of amounts for a given type within an optional date range.
+  /// Aggregate-only — no join needed here since no row data is returned.
   Stream<double> watchTotalByType(
     TransactionType type, {
     DateTime? start,
@@ -167,5 +368,28 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
 
   Future<int> deleteTransaction(int id) {
     return (delete(transactions)..where((t) => t.id.equals(id))).go();
+  }
+
+  TransactionWithJoin _mapRow(
+    TypedResult row,
+    $AccountsTable sourceAccount,
+    $AccountsTable transferAccountTable,
+  ) {
+    final t = row.readTable(transactions);
+
+    return TransactionWithJoin(
+      id: t.id,
+      amount: t.amount,
+      type: t.type,
+      accountId: t.accountId,
+      categoryId: t.categoryId,
+      transferAccountId: t.transferAccountId,
+      note: t.note,
+      transactionDate: t.transactionDate,
+      createdAt: t.createdAt,
+      account: row.readTable(sourceAccount),
+      transferAccount: row.readTableOrNull(transferAccountTable),
+      category: row.readTableOrNull(categories),
+    );
   }
 }
