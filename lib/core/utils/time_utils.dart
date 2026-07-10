@@ -31,6 +31,18 @@ class TimeUtils {
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', //
   ];
 
+  static const weekdayNames = [
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+    'Friday', 'Saturday', 'Sunday', //
+  ];
+
+  static String monthAbbreviation(int month) => monthAbbreviations[month - 1];
+
   static String monthYearLabel(DateTime date) =>
-      '${monthAbbreviations[date.month - 1]} ${date.year}';
+      '${monthAbbreviation(date.month)} ${date.year}';
+
+  static String dayMonthLabel(DateTime date) =>
+      '${date.day} ${monthAbbreviation(date.month)}';
+
+  static String weekdayLabel(DateTime date) => weekdayNames[date.weekday - 1];
 }

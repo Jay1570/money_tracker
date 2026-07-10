@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:money_tracker/core/database/tables/enums.dart';
+import 'package:money_tracker/core/models/transaction.dart';
 import 'package:money_tracker/core/utils/time_utils.dart';
-
 import 'package:money_tracker/core/widgets/app_bar.dart';
 import 'package:money_tracker/core/widgets/app_scaffold.dart';
-
 import 'package:money_tracker/modules/home/home_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -35,9 +35,7 @@ class _HomeBody extends ConsumerWidget {
     final expense = ref.watch(monthlyExpenseProvider).value ?? 0;
     final balance = ref.watch(monthlyBalanceProvider);
     final selectedMonth = ref.watch(selectedMonthProvider);
-
     final transactions = ref.watch(monthlyTransactionsProvider);
-
     final colors = Theme.of(context).colorScheme;
 
     return Column(
@@ -68,48 +66,134 @@ class _HomeBody extends ConsumerWidget {
             ],
           ),
         ),
-
         Expanded(
           child: transactions.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-
             error: (e, _) => Center(child: Text(e.toString())),
-
             data: (items) {
-              // +1 for the month navigator footer, always shown even when
-              // the month has no transactions.
-              return ListView.builder(
-                itemCount: items.length + 1,
-                itemBuilder: (_, index) {
-                  if (index == items.length) {
-                    return _MonthNavigator(
-                      month: selectedMonth,
-                      isEmpty: items.isEmpty,
-                    );
-                  }
+              final grouped = _groupByDay(items);
 
-                  final tx = items[index];
+              final children = <Widget>[];
+              for (final entry in grouped.entries) {
+                final dayTransactions = entry.value;
 
-                  return ListTile(
-                    title: Text(
-                      tx.transferAccount != null
-                          ? "${tx.account.name} -> ${tx.transferAccount!.name}"
-                          : tx.category?.name ?? tx.account.name,
-                    ),
-                    subtitle: Text(tx.transactionDate.toString()),
-                    trailing: Text(
-                      tx.amount.toStringAsFixed(2),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  );
-                },
+                final dayIncome = dayTransactions
+                    .where((t) => t.type == TransactionType.income)
+                    .fold<double>(0, (sum, t) => sum + t.amount);
+                final dayExpense = dayTransactions
+                    .where((t) => t.type == TransactionType.expense)
+                    .fold<double>(0, (sum, t) => sum + t.amount);
+
+                children.add(
+                  _DayHeader(
+                    day: entry.key,
+                    net: dayIncome - dayExpense,
+                  ),
+                );
+                for (final tx in dayTransactions) {
+                  children.add(_TransactionTile(tx: tx));
+                }
+              }
+
+              children.add(
+                _MonthNavigator(month: selectedMonth, isEmpty: items.isEmpty),
               );
+
+              return ListView(children: children);
             },
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Groups already date-descending-sorted transactions by calendar day.
+/// Relies on same-day items being contiguous in [items] (true since the
+/// underlying query orders by transactionDate desc) rather than
+/// re-sorting.
+Map<DateTime, List<TransactionWithJoin>> _groupByDay(
+  List<TransactionWithJoin> items,
+) {
+  final map = <DateTime, List<TransactionWithJoin>>{};
+  for (final tx in items) {
+    final day = DateTime(
+      tx.transactionDate.year,
+      tx.transactionDate.month,
+      tx.transactionDate.day,
+    );
+    map.putIfAbsent(day, () => []).add(tx);
+  }
+  return map;
+}
+
+class _DayHeader extends StatelessWidget {
+  const _DayHeader({required this.day, required this.net});
+
+  final DateTime day;
+  final double net;
+
+  @override
+  Widget build(BuildContext context) {
+    final isIncome = net >= 0;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            '${TimeUtils.dayMonthLabel(day)}  ${TimeUtils.weekdayLabel(day)}',
+            style: const TextStyle(color: Colors.white54),
+          ),
+          Text(
+            '${isIncome ? "Income" : "Expenses"}: ${net.abs().toStringAsFixed(0)}',
+            style: const TextStyle(color: Colors.white54),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TransactionTile extends StatelessWidget {
+  const _TransactionTile({required this.tx});
+
+  final TransactionWithJoin tx;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final isTransfer = tx.type == TransactionType.transfer;
+    final isExpense = tx.type == TransactionType.expense;
+    final background = isTransfer
+        ? colors.primary
+        : isExpense
+        ? Color(0xFFba1a1a)
+        : Colors.green;
+
+    final icon = tx.type == TransactionType.transfer
+        ? Icons.compare_arrows
+        : isExpense
+        ? Icons.arrow_upward
+        : Icons.arrow_downward;
+
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: background,
+        child: Icon(icon, color: Colors.white),
+      ),
+      title: Text(
+        isTransfer
+            ? "${tx.account.name} -> ${tx.transferAccount?.name ?? ''}"
+            : tx.category?.name ?? tx.account.name,
+      ),
+      trailing: Text(
+        tx.amount.toStringAsFixed(2),
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }
@@ -123,10 +207,10 @@ class _MonthNavigator extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     void goToMonth(DateTime target) {
-      ref.read(selectedMonthProvider.notifier).state = DateTime(
+    ref.read(selectedMonthProvider.notifier).setMonth(DateTime(
         target.year,
         target.month,
-      );
+      ));
     }
 
     final previousMonth = DateTime(month.year, month.month - 1);

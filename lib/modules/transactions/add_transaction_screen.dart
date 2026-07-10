@@ -32,11 +32,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   Account? _account;
   Account? _transferAccount;
 
-  // Running calculator state — see NumericKeypad's doc comment for why
-  // only +/- are supported.
-  String _currentInput = '0';
-  double _accumulated = 0;
-  String? _pendingOp;
+  // Mirrors what NumericKeypad reports via onChanged — the calculator
+  // state machine itself now lives inside NumericKeypad, not here.
+  double _amount = 0;
+  String _displayExpression = '0';
 
   String _note = '';
   DateTime _date = DateTime.now();
@@ -59,32 +58,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       _account != null &&
       (_type != TransactionType.transfer || _transferAccount != null);
 
-  double get _amountValue {
-    final current = double.tryParse(_currentInput) ?? 0;
-    if (_pendingOp == null) return current;
-    return _pendingOp == '+' ? _accumulated + current : _accumulated - current;
-  }
-
-  void _onKeypadKey(String key) {
+  void _onAmountChanged(double value, String expression) {
     setState(() {
-      switch (key) {
-        case 'back':
-          _currentInput = _currentInput.length > 1
-              ? _currentInput.substring(0, _currentInput.length - 1)
-              : '0';
-          break;
-        case '+':
-        case '-':
-          _accumulated = _amountValue;
-          _pendingOp = key;
-          _currentInput = '0';
-          break;
-        case '.':
-          if (!_currentInput.contains('.')) _currentInput += '.';
-          break;
-        default:
-          _currentInput = _currentInput == '0' ? key : _currentInput + key;
-      }
+      _amount = value;
+      _displayExpression = expression;
     });
   }
 
@@ -145,9 +122,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       _category = null;
       _account = null;
       _transferAccount = null;
-      _currentInput = '0';
-      _accumulated = 0;
-      _pendingOp = null;
+      _amount = 0;
+      _displayExpression = '0';
+      // NumericKeypad's own internal state resets separately, since it's
+      // keyed by _type below — this just keeps the mirrored display in
+      // sync until that remount reports back in.
       // Deliberately not resetting _isRecurring/_frequency — a recurring
       // intent set before switching tabs is still reasonable to keep.
     });
@@ -176,7 +155,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   Future<void> _save() async {
     final category = _category;
     final account = _account;
-    final amount = _amountValue;
+    final amount = _amount;
 
     if (category == null || account == null || amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -322,13 +301,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                         type: _type,
                         account: _account!,
                         transferAccount: _transferAccount,
-                        displayAmount: _currentInput,
+                        displayAmount: _displayExpression,
                         note: _note,
                         saving: _saving,
                         dateLabel: _dateLabel(_date),
                         isRecurring: widget.isRecurring,
                         frequency: _frequency,
-                        onKeypadKey: _onKeypadKey,
+                        onAmountChanged: _onAmountChanged,
                         onDateTap: _pickDate,
                         onNoteChanged: (v) => _note = v,
                         onConfirm: _save,
@@ -470,7 +449,7 @@ class _AmountEntryPanel extends StatelessWidget {
     required this.dateLabel,
     required this.isRecurring,
     required this.frequency,
-    required this.onKeypadKey,
+    required this.onAmountChanged,
     required this.onDateTap,
     required this.onNoteChanged,
     required this.onConfirm,
@@ -486,9 +465,9 @@ class _AmountEntryPanel extends StatelessWidget {
   final String note;
   final bool saving;
   final String dateLabel;
-  final RecurringFrequency frequency;
   final bool isRecurring;
-  final ValueChanged<String> onKeypadKey;
+  final RecurringFrequency frequency;
+  final void Function(double value, String expression) onAmountChanged;
   final VoidCallback onDateTap;
   final ValueChanged<String> onNoteChanged;
   final VoidCallback onConfirm;
@@ -525,11 +504,18 @@ class _AmountEntryPanel extends StatelessWidget {
                       ),
               ),
               const SizedBox(width: 8),
-              Text(
-                displayAmount,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    displayAmount,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -581,7 +567,12 @@ class _AmountEntryPanel extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           NumericKeypad(
-            onKeyTap: onKeypadKey,
+            // Switching tabs (Expense/Income/Transfer) should start the
+            // calculator fresh — keying by `type` forces Flutter to
+            // remount NumericKeypad with new internal state rather than
+            // carrying over whatever was being typed on the previous tab.
+            key: ValueKey(type),
+            onChanged: onAmountChanged,
             onDateTap: onDateTap,
             dateLabel: dateLabel,
             onConfirm: saving ? () {} : onConfirm,
@@ -596,13 +587,13 @@ class _RecurringRow extends StatelessWidget {
   const _RecurringRow({
     required this.isRecurring,
     required this.frequency,
-    required this.onFrequencyChanged,
     required this.enabled,
+    required this.onFrequencyChanged,
   });
 
   final bool isRecurring;
-  final bool enabled;
   final RecurringFrequency frequency;
+  final bool enabled;
   final ValueChanged<RecurringFrequency> onFrequencyChanged;
 
   @override
