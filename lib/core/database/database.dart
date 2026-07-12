@@ -6,13 +6,19 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+const databaseFileName = 'money_manager.db';
+
+Future<String> resolveDatabaseFilePath() async {
+  final dir = await getApplicationDocumentsDirectory();
+  return p.join(dir.path, databaseFileName);
+}
+
 QueryExecutor openConnection() {
   return LazyDatabase(() async {
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dir.path, 'money_manager.db'));
+    final path = await resolveDatabaseFilePath();
     if (kDebugMode) {
-      debugPrint(dir.path);
+      debugPrint(path);
     }
-    return NativeDatabase.createInBackground(file);
+    return NativeDatabase.createInBackground(File(path));
   });
 }

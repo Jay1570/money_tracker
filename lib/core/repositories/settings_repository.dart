@@ -29,10 +29,4 @@ class SettingsRepository {
 
   Future<void> setDarkMode(bool enabled) =>
       _db.settingsDao.updateDarkMode(enabled);
-
-  Future<void> setBiometric(bool enabled) =>
-      _db.settingsDao.updateBiometric(enabled);
-
-  Future<void> setDynamicColor(bool enabled) =>
-      _db.settingsDao.updateDynamicColor(enabled);
 }

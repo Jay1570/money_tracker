@@ -29,17 +29,17 @@ class BottomBarItem {
     route: '/reports',
   );
 
-  static const profile = BottomBarItem(
-    label: 'Profile',
-    icon: Icons.person_outline,
-    route: '/profile',
+  static const settings = BottomBarItem(
+    label: 'Settings',
+    icon: Icons.settings_outlined,
+    route: '/settings',
   );
 
   static const values = [
     home,
     charts,
     reports,
-    profile,
+    settings,
   ];
 
   static BottomBarItem fromLocation(String location) {

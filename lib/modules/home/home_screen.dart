@@ -136,6 +136,7 @@ class _DayHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIncome = net >= 0;
+    final colors = Theme.of(context).colorScheme;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
@@ -144,11 +145,11 @@ class _DayHeader extends StatelessWidget {
         children: [
           Text(
             '${TimeUtils.dayMonthLabel(day)}  ${TimeUtils.weekdayLabel(day)}',
-            style: const TextStyle(color: Colors.white54),
+            style: TextStyle(color: colors.onSurfaceVariant),
           ),
           Text(
             '${isIncome ? "Income" : "Expenses"}: ${net.abs().toStringAsFixed(0)}',
-            style: const TextStyle(color: Colors.white54),
+            style: TextStyle(color: colors.onSurfaceVariant),
           ),
         ],
       ),
@@ -207,25 +208,30 @@ class _MonthNavigator extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     void goToMonth(DateTime target) {
-    ref.read(selectedMonthProvider.notifier).setMonth(DateTime(
-        target.year,
-        target.month,
-      ));
+      ref
+          .read(selectedMonthProvider.notifier)
+          .setMonth(
+            DateTime(
+              target.year,
+              target.month,
+            ),
+          );
     }
 
     final previousMonth = DateTime(month.year, month.month - 1);
     final nextMonth = DateTime(month.year, month.month + 1);
+    final colors = Theme.of(context).colorScheme;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(20, isEmpty ? 60 : 20, 20, 20),
       child: Column(
         children: [
           if (isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(bottom: 20),
               child: Text(
                 "No Transactions",
-                style: TextStyle(color: Colors.white54),
+                style: TextStyle(color: colors.onSurfaceVariant),
               ),
             ),
           Row(
@@ -267,10 +273,12 @@ class _MonthPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     final children = [
-      Icon(icon, size: 18, color: Colors.white70),
+      Icon(icon, size: 18, color: colors.onSurfaceVariant),
       const SizedBox(width: 4),
-      Text(label, style: const TextStyle(color: Colors.white70)),
+      Text(label, style: TextStyle(color: colors.onSurfaceVariant)),
     ];
 
     return InkWell(
@@ -279,7 +287,7 @@ class _MonthPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.white24),
+          border: Border.all(color: colors.outline),
           borderRadius: BorderRadius.circular(24),
         ),
         child: Row(
@@ -302,12 +310,13 @@ class _SummaryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+        final colors = Theme.of(context).colorScheme;
     return Column(
       children: [
         Text(
           title,
-          style: const TextStyle(
-            color: Colors.white54,
+          style: TextStyle(
+            color: colors.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 8),

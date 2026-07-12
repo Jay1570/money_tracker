@@ -8,6 +8,7 @@ import 'package:money_tracker/core/providers/repository_providers.dart';
 import 'package:money_tracker/core/utils/account_type.dart';
 import 'package:money_tracker/core/utils/category_icons_map.dart';
 import 'package:money_tracker/core/widgets/account_picker_sheet.dart';
+import 'package:money_tracker/core/widgets/app_scaffold.dart';
 import 'package:money_tracker/core/widgets/app_snackbar.dart';
 import 'package:money_tracker/core/widgets/numeric_keypad.dart';
 import 'package:money_tracker/core/widgets/segmented_toggle.dart';
@@ -158,14 +159,16 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     final amount = _amount;
 
     if (category == null || account == null || amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pick a category and enter an amount')),
+      AppSnackbar.showError(
+        message: 'Pick a category and enter an amount',
+        title: "Error",
       );
       return;
     }
     if (_type == TransactionType.transfer && _transferAccount == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pick a destination account')),
+      AppSnackbar.showError(
+        message: 'Pick a destination account',
+        title: "Error",
       );
       return;
     }
@@ -237,8 +240,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
         : ref.watch(categoriesProvider);
     final colors = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      backgroundColor: const Color(0xff171717),
+    return AppScaffold(
       appBar: AppBar(
         backgroundColor: colors.surfaceContainer,
         elevation: 0,
@@ -366,11 +368,13 @@ class _CategoryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     if (categories.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No categories yet',
-          style: TextStyle(color: Colors.white54),
+          style: TextStyle(color: colors.onSurfaceVariant),
         ),
       );
     }
@@ -408,10 +412,12 @@ class _CategoryGrid extends StatelessWidget {
                               radius: 30,
                               backgroundColor: selected
                                   ? colors.primary
-                                  : const Color(0xff2a2a2a),
+                                  : colors.surfaceContainer,
                               child: Icon(
                                 categoryIconFromKey(category.icon),
-                                color: selected ? Colors.black : Colors.white70,
+                                color: selected
+                                    ? colors.surface
+                                    : colors.onSurfaceVariant,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -524,34 +530,36 @@ class _AmountEntryPanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: const Color(0xff2a2a2a),
+              color: colors.surfaceContainer,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               children: [
-                const Text('Note :', style: TextStyle(color: Colors.white54)),
+                Text(
+                  'Note :',
+                  style: TextStyle(color: colors.onSurfaceVariant),
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
                     onChanged: onNoteChanged,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: colors.onSurface),
+                    decoration: InputDecoration(
                       hintText: 'Enter a note...',
-                      hintStyle: TextStyle(color: Colors.white38),
+                      hintStyle: TextStyle(color: colors.onSurfaceVariant),
                       border: InputBorder.none,
                     ),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.camera_alt_outlined,
-                    color: Colors.white54,
+                    color: colors.onSurfaceVariant,
                   ),
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Photo attachments aren't available yet"),
-                      ),
+                    AppSnackbar.showError(
+                      message: "Photo attachments aren't available yet",
+                      title: "Error",
                     );
                   },
                 ),
@@ -603,7 +611,7 @@ class _RecurringRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xff2a2a2a),
+        color: colors.surfaceContainer,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -611,10 +619,17 @@ class _RecurringRow extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.event_repeat, color: Colors.white54, size: 18),
+              Icon(
+                Icons.event_repeat,
+                color: colors.onSurfaceVariant,
+                size: 18,
+              ),
               const SizedBox(width: 8),
-              const Expanded(
-                child: Text('Repeat', style: TextStyle(color: Colors.white70)),
+              Expanded(
+                child: Text(
+                  'Repeat',
+                  style: TextStyle(color: colors.onSurfaceVariant),
+                ),
               ),
               Switch(
                 value: isRecurring,
@@ -640,13 +655,13 @@ class _RecurringRow extends StatelessWidget {
                       selectedColor: colors.primary,
                       labelStyle: TextStyle(
                         color: option == frequency
-                            ? Colors.black
-                            : Colors.white70,
+                            ? colors.surface
+                            : colors.onSurfaceVariant,
                         fontWeight: option == frequency
                             ? FontWeight.bold
                             : FontWeight.normal,
                       ),
-                      backgroundColor: const Color(0xff1c1c1c),
+                      backgroundColor: colors.surface,
                       side: BorderSide.none,
                     ),
                 ],
@@ -678,7 +693,7 @@ class _SingleAccountRow extends StatelessWidget {
           ),
           child: Icon(
             accountTypeIcon(account.type),
-            color: Colors.black,
+            color: colors.surface,
             size: 20,
           ),
         ),
@@ -710,6 +725,7 @@ class _TransferAccountsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Row(
       children: [
         Flexible(
@@ -722,9 +738,13 @@ class _TransferAccountsRow extends StatelessWidget {
             ),
           ),
         ),
-        const Padding(
+        Padding(
           padding: EdgeInsets.symmetric(horizontal: 6),
-          child: Icon(Icons.arrow_forward, size: 16, color: Colors.white54),
+          child: Icon(
+            Icons.arrow_forward,
+            size: 16,
+            color: colors.onSurfaceVariant,
+          ),
         ),
         Flexible(
           child: InkWell(
@@ -734,7 +754,7 @@ class _TransferAccountsRow extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: to == null ? Colors.white38 : Colors.white,
+                color: to == null ? colors.onSurfaceVariant : colors.onSurface,
               ),
             ),
           ),

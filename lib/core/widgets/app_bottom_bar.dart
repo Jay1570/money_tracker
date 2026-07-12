@@ -26,7 +26,7 @@ class AppBottomBar extends StatelessWidget {
             _buildItem(theme, BottomBarItem.charts),
             const Spacer(),
             _buildItem(theme, BottomBarItem.reports),
-            _buildItem(theme, BottomBarItem.profile),
+            _buildItem(theme, BottomBarItem.settings),
           ],
         ),
       ),

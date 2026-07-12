@@ -60,11 +60,11 @@ class AccountPickerSheet extends ConsumerWidget {
                     .toList();
 
                 if (filtered.isEmpty) {
-                  return const Padding(
+                  return Padding(
                     padding: EdgeInsets.all(32),
                     child: Text(
                       'No accounts available',
-                      style: TextStyle(color: Colors.white54),
+                      style: TextStyle(color: colors.outline),
                     ),
                   );
                 }
@@ -73,7 +73,7 @@ class AccountPickerSheet extends ConsumerWidget {
                   shrinkWrap: true,
                   itemCount: filtered.length,
                   separatorBuilder: (_, _) =>
-                      const Divider(height: 1, color: Colors.white12),
+                      Divider(height: 1, color: colors.outline),
                   itemBuilder: (_, index) {
                     final account = filtered[index];
                     return ListTile(
@@ -86,7 +86,7 @@ class AccountPickerSheet extends ConsumerWidget {
                         ),
                         child: Icon(
                           accountTypeIcon(account.type),
-                          color: Colors.black,
+                          color: colors.surface,
                         ),
                       ),
                       title: Text(account.name),

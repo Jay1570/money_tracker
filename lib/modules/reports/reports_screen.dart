@@ -105,11 +105,11 @@ class _AnalyticsTab extends ConsumerWidget {
               const _CardHeader(title: 'Monthly Budget'),
               const SizedBox(height: 20),
               if (aggregatedBudget == null)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Text(
                     'No active budgets this month',
-                    style: TextStyle(color: Colors.white54),
+                    style: TextStyle(color: colors.onSurfaceVariant),
                   ),
                 )
               else
@@ -128,7 +128,7 @@ class _AnalyticsTab extends ConsumerWidget {
                               value: aggregatedBudget.percentRemaining
                                   .toDouble(),
                               strokeWidth: 10,
-                              backgroundColor: Colors.white12,
+                              backgroundColor: colors.onSurfaceVariant,
                               valueColor: AlwaysStoppedAnimation(
                                 colors.primary,
                               ),
@@ -150,12 +150,12 @@ class _AnalyticsTab extends ConsumerWidget {
                             label: 'Remaining',
                             value: aggregatedBudget.remaining,
                           ),
-                          const Divider(color: Colors.white12, height: 20),
+                          Divider(color: colors.outlineVariant, height: 20),
                           _BudgetRow(
                             label: 'Budget',
                             value: aggregatedBudget.budget,
                           ),
-                          const Divider(color: Colors.white12, height: 20),
+                          Divider(color: colors.outlineVariant, height: 20),
                           _BudgetRow(
                             label: 'Expenses',
                             value: aggregatedBudget.spent,
@@ -180,6 +180,7 @@ class _CardHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -187,7 +188,7 @@ class _CardHeader extends StatelessWidget {
           title,
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        const Icon(Icons.chevron_right, color: Colors.white38),
+        Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
       ],
     );
   }
@@ -201,10 +202,12 @@ class _StatColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white54)),
+        Text(label, style: TextStyle(color: colors.onSurfaceVariant)),
         const SizedBox(height: 4),
         Text(
           formatAmount(value),
@@ -223,10 +226,12 @@ class _BudgetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text('$label :', style: const TextStyle(color: Colors.white54)),
+        Text('$label :', style: TextStyle(color: colors.onSurfaceVariant)),
         Text(
           formatAmount(value),
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -245,6 +250,7 @@ class _AccountsTab extends ConsumerWidget {
     final assetsLiabilities = ref.watch(assetsAndLiabilitiesProvider);
     final grouped = ref.watch(groupedAccountsProvider);
     final currency = ref.watch(currencyCodeProvider).value ?? 'INR';
+    final colors = Theme.of(context).colorScheme;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
@@ -252,17 +258,21 @@ class _AccountsTab extends ConsumerWidget {
         SectionCard(
           child: Stack(
             children: [
-              const Positioned(
+              Positioned(
                 right: -4,
                 top: -4,
-                child: Icon(Icons.savings, size: 56, color: Colors.white10),
+                child: Icon(
+                  Icons.savings,
+                  size: 56,
+                  color: colors.outlineVariant,
+                ),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Net Worth',
-                    style: TextStyle(color: Colors.white54),
+                    style: TextStyle(color: colors.onSurfaceVariant),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -296,12 +306,12 @@ class _AccountsTab extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         if (grouped.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 40),
             child: Center(
               child: Text(
                 'No accounts yet',
-                style: TextStyle(color: Colors.white54),
+                style: TextStyle(color: colors.onSurfaceVariant),
               ),
             ),
           )
@@ -324,8 +334,8 @@ class _AccountsTab extends ConsumerWidget {
           child: FilledButton.icon(
             onPressed: () => context.push('/account/add'),
             style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.black,
+              backgroundColor: colors.primary,
+              foregroundColor: colors.surface,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(28),
@@ -351,10 +361,12 @@ class _NetWorthColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white54)),
+        Text(label, style: TextStyle(color: colors.onSurfaceVariant)),
         const SizedBox(height: 4),
         Text(
           formatAmount(value),
@@ -374,6 +386,7 @@ class _AccountGroupHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLiabilityGroup = type.isLiability;
+    final colors = Theme.of(context).colorScheme;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
@@ -382,13 +395,13 @@ class _AccountGroupHeader extends StatelessWidget {
         children: [
           Text(
             accountTypeLabel(type),
-            style: const TextStyle(color: Colors.white54),
+            style: TextStyle(color: colors.onSurfaceVariant),
           ),
           Text(
             isLiabilityGroup
                 ? 'Liabilities : ${formatAmount(total.abs())}'
                 : formatAmount(total),
-            style: const TextStyle(color: Colors.white54),
+            style: TextStyle(color: colors.onSurfaceVariant),
           ),
         ],
       ),
@@ -418,7 +431,7 @@ class _AccountTile extends StatelessWidget {
               color: colors.primary,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(accountTypeIcon(account.type), color: Colors.black),
+            child: Icon(accountTypeIcon(account.type), color: colors.surface),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -431,9 +444,12 @@ class _AccountTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               if (isLiability)
-                const Text(
+                Text(
                   '( I owe )',
-                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
                 ),
               Text(
                 '$currency ${formatAmount(account.currentBalance)}',
@@ -442,7 +458,7 @@ class _AccountTile extends StatelessWidget {
             ],
           ),
           const SizedBox(width: 4),
-          const Icon(Icons.chevron_right, color: Colors.white24, size: 20),
+          Icon(Icons.chevron_right, color: colors.outlineVariant, size: 20),
         ],
       ),
     );

@@ -19,10 +19,11 @@ class SegmentedToggle<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.white24),
+        border: Border.all(color: colors.outline),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
@@ -36,14 +37,14 @@ class SegmentedToggle<T> extends StatelessWidget {
                 duration: const Duration(milliseconds: 150),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: selected ? Colors.white : Colors.transparent,
+                  color: selected ? colors.onSurface : Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   labelBuilder(option),
                   style: TextStyle(
-                    color: selected ? Colors.black : Colors.white,
+                    color: selected ? colors.surface : colors.onSurface,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

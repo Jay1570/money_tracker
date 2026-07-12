@@ -6,6 +6,7 @@ import 'package:money_tracker/core/constants/currencies.dart';
 import 'package:money_tracker/core/database/tables/enums.dart';
 import 'package:money_tracker/core/providers/repository_providers.dart';
 import 'package:money_tracker/core/widgets/app_dropdown_field.dart';
+import 'package:money_tracker/core/widgets/app_snackbar.dart';
 import 'package:money_tracker/core/widgets/app_text_field.dart';
 
 class AddAccountScreen extends ConsumerStatefulWidget {
@@ -59,9 +60,7 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _saving = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        AppSnackbar.showError(message: e.toString(), title: "Error");
       }
     }
   }

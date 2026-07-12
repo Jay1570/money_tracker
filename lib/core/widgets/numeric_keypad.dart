@@ -164,7 +164,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
         child: Padding(
           padding: const EdgeInsets.all(3),
           child: Material(
-            color: background ?? const Color(0xff2a2a2a),
+            color: background ?? colors.surface,
             borderRadius: BorderRadius.circular(6),
             child: InkWell(
               borderRadius: BorderRadius.circular(6),
@@ -176,19 +176,19 @@ class _NumericKeypadState extends State<NumericKeypad> {
       );
     }
 
-    Widget digit(String label) => cell(
+    Widget digit(String label, ColorScheme colors) => cell(
       onTap: () => _handleKey(label),
       child: Text(
         label,
-        style: const TextStyle(fontSize: 20, color: Colors.white),
+        style: TextStyle(fontSize: 20, color: colors.onSurface),
       ),
     );
 
-    Widget op(String label, String token) => cell(
+    Widget op(String label, String token, ColorScheme colors) => cell(
       onTap: () => _handleKey(token),
       child: Text(
         label,
-        style: const TextStyle(fontSize: 20, color: Colors.white70),
+        style: TextStyle(fontSize: 20, color: colors.onSurface),
       ),
     );
 
@@ -199,9 +199,9 @@ class _NumericKeypadState extends State<NumericKeypad> {
         // below it, keeping every row the same total width].
         Row(
           children: [
-            digit('7'),
-            digit('8'),
-            digit('9'),
+            digit('7', colors),
+            digit('8', colors),
+            digit('9', colors),
             cell(
               flex: 2,
               onTap: widget.onDateTap,
@@ -227,31 +227,31 @@ class _NumericKeypadState extends State<NumericKeypad> {
         ),
         Row(
           children: [
-            digit('4'),
-            digit('5'),
-            digit('6'),
-            op('+', '+'),
-            op('−', '-'),
+            digit('4', colors),
+            digit('5', colors),
+            digit('6', colors),
+            op('+', '+', colors),
+            op('−', '-', colors),
           ],
         ),
         Row(
           children: [
-            digit('1'),
-            digit('2'),
-            digit('3'),
-            op('×', '*'),
-            op('÷', '/'),
+            digit('1', colors),
+            digit('2', colors),
+            digit('3', colors),
+            op('×', '*', colors),
+            op('÷', '/', colors),
           ],
         ),
         Row(
           children: [
-            digit('.'),
-            digit('0'),
+            digit('.', colors),
+            digit('0', colors),
             cell(
               onTap: () => _handleKey('back'),
-              child: const Icon(
+              child: Icon(
                 Icons.backspace_outlined,
-                color: Colors.white70,
+                color: colors.onSurface,
                 size: 20,
               ),
             ),
@@ -259,7 +259,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
               flex: 2,
               onTap: widget.onConfirm,
               background: colors.primary,
-              child: const Icon(Icons.check, color: Colors.black),
+              child: Icon(Icons.check, color: colors.surface),
             ),
           ],
         ),

@@ -5,6 +5,7 @@ import "package:money_tracker/core/providers/repository_providers.dart";
 import "package:money_tracker/core/router.dart";
 import "package:money_tracker/core/theme/app_theme.dart";
 import "package:money_tracker/core/theme/text_theme.dart";
+import "package:money_tracker/modules/settings/settings_provider.dart";
 
 final rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -17,6 +18,7 @@ void main() async {
   final container = ProviderContainer();
 
   await container.read(appStartupServiceProvider).initialize();
+  await container.read(settingsRepositoryProvider).getSettings();
 
   runApp(
     UncontrolledProviderScope(
@@ -33,16 +35,18 @@ class App extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = createTextTheme(context, "Roboto", "Roboto");
 
+    final settings = ref.watch(settingsStreamProvider).value;
+    final isDarkMode = settings?.darkMode ?? true;
+
     const themeColor = Color(0xFFFFD54F);
 
     return MaterialApp.router(
       theme: AppTheme.light(themeColor, textTheme),
       darkTheme: AppTheme.dark(themeColor, textTheme),
-      themeMode: ThemeMode.dark,
+      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
       scaffoldMessengerKey: rootScaffoldMessengerKey,
       routerConfig: ref.watch(routerProvider),
       debugShowCheckedModeBanner: false,
-
     );
   }
 }

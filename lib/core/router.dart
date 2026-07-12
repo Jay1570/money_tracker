@@ -5,6 +5,7 @@ import "package:money_tracker/main.dart";
 import "package:money_tracker/modules/accounts/add_account_screen.dart";
 import "package:money_tracker/modules/home/home_screen.dart";
 import "package:money_tracker/modules/reports/reports_screen.dart";
+import "package:money_tracker/modules/settings/settings_screen.dart";
 import "package:money_tracker/modules/transactions/add_transaction_screen.dart";
 import "package:money_tracker/modules/transactions/recurring_transaction_screen.dart";
 
@@ -57,6 +58,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: const AddTransactionScreen(
             isRecurring: true,
           ),
+        ),
+      ),
+      GoRoute(
+        path: "/settings",
+        pageBuilder: (context, state) => buildSlidePage(
+          state: state,
+          child: const SettingsScreen(),
         ),
       ),
 

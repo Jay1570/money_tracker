@@ -45,14 +45,4 @@ class SettingsDao extends DatabaseAccessor<AppDatabase>
   Future<int> updateDarkMode(bool darkMode) {
     return updateSettings(SettingsCompanion(darkMode: Value(darkMode)));
   }
-
-  Future<int> updateBiometric(bool biometric) {
-    return updateSettings(SettingsCompanion(biometric: Value(biometric)));
-  }
-
-  Future<int> updateDynamicColor(bool dynamicColor) {
-    return updateSettings(
-      SettingsCompanion(dynamicColor: Value(dynamicColor)),
-    );
-  }
 }

@@ -27,7 +27,6 @@ class AppScaffold extends StatelessWidget {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xff171717),
       appBar: appBar,
       body: SafeArea(child: body),
       bottomNavigationBar: showBottomBar

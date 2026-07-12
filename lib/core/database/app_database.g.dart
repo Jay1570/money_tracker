@@ -2809,44 +2809,8 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
     ),
     defaultValue: const Constant(false),
   );
-  static const VerificationMeta _biometricMeta = const VerificationMeta(
-    'biometric',
-  );
   @override
-  late final GeneratedColumn<bool> biometric = GeneratedColumn<bool>(
-    'biometric',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("biometric" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
-  static const VerificationMeta _dynamicColorMeta = const VerificationMeta(
-    'dynamicColor',
-  );
-  @override
-  late final GeneratedColumn<bool> dynamicColor = GeneratedColumn<bool>(
-    'dynamic_color',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("dynamic_color" IN (0, 1))',
-    ),
-    defaultValue: const Constant(true),
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    currency,
-    darkMode,
-    biometric,
-    dynamicColor,
-  ];
+  List<GeneratedColumn> get $columns => [id, currency, darkMode];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2874,21 +2838,6 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         darkMode.isAcceptableOrUnknown(data['dark_mode']!, _darkModeMeta),
       );
     }
-    if (data.containsKey('biometric')) {
-      context.handle(
-        _biometricMeta,
-        biometric.isAcceptableOrUnknown(data['biometric']!, _biometricMeta),
-      );
-    }
-    if (data.containsKey('dynamic_color')) {
-      context.handle(
-        _dynamicColorMeta,
-        dynamicColor.isAcceptableOrUnknown(
-          data['dynamic_color']!,
-          _dynamicColorMeta,
-        ),
-      );
-    }
     return context;
   }
 
@@ -2910,14 +2859,6 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         DriftSqlType.bool,
         data['${effectivePrefix}dark_mode'],
       )!,
-      biometric: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}biometric'],
-      )!,
-      dynamicColor: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}dynamic_color'],
-      )!,
     );
   }
 
@@ -2931,14 +2872,10 @@ class Setting extends DataClass implements Insertable<Setting> {
   final int id;
   final String currency;
   final bool darkMode;
-  final bool biometric;
-  final bool dynamicColor;
   const Setting({
     required this.id,
     required this.currency,
     required this.darkMode,
-    required this.biometric,
-    required this.dynamicColor,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2946,8 +2883,6 @@ class Setting extends DataClass implements Insertable<Setting> {
     map['id'] = Variable<int>(id);
     map['currency'] = Variable<String>(currency);
     map['dark_mode'] = Variable<bool>(darkMode);
-    map['biometric'] = Variable<bool>(biometric);
-    map['dynamic_color'] = Variable<bool>(dynamicColor);
     return map;
   }
 
@@ -2956,8 +2891,6 @@ class Setting extends DataClass implements Insertable<Setting> {
       id: Value(id),
       currency: Value(currency),
       darkMode: Value(darkMode),
-      biometric: Value(biometric),
-      dynamicColor: Value(dynamicColor),
     );
   }
 
@@ -2970,8 +2903,6 @@ class Setting extends DataClass implements Insertable<Setting> {
       id: serializer.fromJson<int>(json['id']),
       currency: serializer.fromJson<String>(json['currency']),
       darkMode: serializer.fromJson<bool>(json['darkMode']),
-      biometric: serializer.fromJson<bool>(json['biometric']),
-      dynamicColor: serializer.fromJson<bool>(json['dynamicColor']),
     );
   }
   @override
@@ -2981,33 +2912,19 @@ class Setting extends DataClass implements Insertable<Setting> {
       'id': serializer.toJson<int>(id),
       'currency': serializer.toJson<String>(currency),
       'darkMode': serializer.toJson<bool>(darkMode),
-      'biometric': serializer.toJson<bool>(biometric),
-      'dynamicColor': serializer.toJson<bool>(dynamicColor),
     };
   }
 
-  Setting copyWith({
-    int? id,
-    String? currency,
-    bool? darkMode,
-    bool? biometric,
-    bool? dynamicColor,
-  }) => Setting(
+  Setting copyWith({int? id, String? currency, bool? darkMode}) => Setting(
     id: id ?? this.id,
     currency: currency ?? this.currency,
     darkMode: darkMode ?? this.darkMode,
-    biometric: biometric ?? this.biometric,
-    dynamicColor: dynamicColor ?? this.dynamicColor,
   );
   Setting copyWithCompanion(SettingsCompanion data) {
     return Setting(
       id: data.id.present ? data.id.value : this.id,
       currency: data.currency.present ? data.currency.value : this.currency,
       darkMode: data.darkMode.present ? data.darkMode.value : this.darkMode,
-      biometric: data.biometric.present ? data.biometric.value : this.biometric,
-      dynamicColor: data.dynamicColor.present
-          ? data.dynamicColor.value
-          : this.dynamicColor,
     );
   }
 
@@ -3016,60 +2933,45 @@ class Setting extends DataClass implements Insertable<Setting> {
     return (StringBuffer('Setting(')
           ..write('id: $id, ')
           ..write('currency: $currency, ')
-          ..write('darkMode: $darkMode, ')
-          ..write('biometric: $biometric, ')
-          ..write('dynamicColor: $dynamicColor')
+          ..write('darkMode: $darkMode')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, currency, darkMode, biometric, dynamicColor);
+  int get hashCode => Object.hash(id, currency, darkMode);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Setting &&
           other.id == this.id &&
           other.currency == this.currency &&
-          other.darkMode == this.darkMode &&
-          other.biometric == this.biometric &&
-          other.dynamicColor == this.dynamicColor);
+          other.darkMode == this.darkMode);
 }
 
 class SettingsCompanion extends UpdateCompanion<Setting> {
   final Value<int> id;
   final Value<String> currency;
   final Value<bool> darkMode;
-  final Value<bool> biometric;
-  final Value<bool> dynamicColor;
   const SettingsCompanion({
     this.id = const Value.absent(),
     this.currency = const Value.absent(),
     this.darkMode = const Value.absent(),
-    this.biometric = const Value.absent(),
-    this.dynamicColor = const Value.absent(),
   });
   SettingsCompanion.insert({
     this.id = const Value.absent(),
     this.currency = const Value.absent(),
     this.darkMode = const Value.absent(),
-    this.biometric = const Value.absent(),
-    this.dynamicColor = const Value.absent(),
   });
   static Insertable<Setting> custom({
     Expression<int>? id,
     Expression<String>? currency,
     Expression<bool>? darkMode,
-    Expression<bool>? biometric,
-    Expression<bool>? dynamicColor,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (currency != null) 'currency': currency,
       if (darkMode != null) 'dark_mode': darkMode,
-      if (biometric != null) 'biometric': biometric,
-      if (dynamicColor != null) 'dynamic_color': dynamicColor,
     });
   }
 
@@ -3077,15 +2979,11 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Value<int>? id,
     Value<String>? currency,
     Value<bool>? darkMode,
-    Value<bool>? biometric,
-    Value<bool>? dynamicColor,
   }) {
     return SettingsCompanion(
       id: id ?? this.id,
       currency: currency ?? this.currency,
       darkMode: darkMode ?? this.darkMode,
-      biometric: biometric ?? this.biometric,
-      dynamicColor: dynamicColor ?? this.dynamicColor,
     );
   }
 
@@ -3101,12 +2999,6 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     if (darkMode.present) {
       map['dark_mode'] = Variable<bool>(darkMode.value);
     }
-    if (biometric.present) {
-      map['biometric'] = Variable<bool>(biometric.value);
-    }
-    if (dynamicColor.present) {
-      map['dynamic_color'] = Variable<bool>(dynamicColor.value);
-    }
     return map;
   }
 
@@ -3115,9 +3007,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     return (StringBuffer('SettingsCompanion(')
           ..write('id: $id, ')
           ..write('currency: $currency, ')
-          ..write('darkMode: $darkMode, ')
-          ..write('biometric: $biometric, ')
-          ..write('dynamicColor: $dynamicColor')
+          ..write('darkMode: $darkMode')
           ..write(')'))
         .toString();
   }
@@ -6205,16 +6095,12 @@ typedef $$SettingsTableCreateCompanionBuilder =
       Value<int> id,
       Value<String> currency,
       Value<bool> darkMode,
-      Value<bool> biometric,
-      Value<bool> dynamicColor,
     });
 typedef $$SettingsTableUpdateCompanionBuilder =
     SettingsCompanion Function({
       Value<int> id,
       Value<String> currency,
       Value<bool> darkMode,
-      Value<bool> biometric,
-      Value<bool> dynamicColor,
     });
 
 class $$SettingsTableFilterComposer
@@ -6238,16 +6124,6 @@ class $$SettingsTableFilterComposer
 
   ColumnFilters<bool> get darkMode => $composableBuilder(
     column: $table.darkMode,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get biometric => $composableBuilder(
-    column: $table.biometric,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get dynamicColor => $composableBuilder(
-    column: $table.dynamicColor,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -6275,16 +6151,6 @@ class $$SettingsTableOrderingComposer
     column: $table.darkMode,
     builder: (column) => ColumnOrderings(column),
   );
-
-  ColumnOrderings<bool> get biometric => $composableBuilder(
-    column: $table.biometric,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get dynamicColor => $composableBuilder(
-    column: $table.dynamicColor,
-    builder: (column) => ColumnOrderings(column),
-  );
 }
 
 class $$SettingsTableAnnotationComposer
@@ -6304,14 +6170,6 @@ class $$SettingsTableAnnotationComposer
 
   GeneratedColumn<bool> get darkMode =>
       $composableBuilder(column: $table.darkMode, builder: (column) => column);
-
-  GeneratedColumn<bool> get biometric =>
-      $composableBuilder(column: $table.biometric, builder: (column) => column);
-
-  GeneratedColumn<bool> get dynamicColor => $composableBuilder(
-    column: $table.dynamicColor,
-    builder: (column) => column,
-  );
 }
 
 class $$SettingsTableTableManager
@@ -6345,28 +6203,20 @@ class $$SettingsTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> currency = const Value.absent(),
                 Value<bool> darkMode = const Value.absent(),
-                Value<bool> biometric = const Value.absent(),
-                Value<bool> dynamicColor = const Value.absent(),
               }) => SettingsCompanion(
                 id: id,
                 currency: currency,
                 darkMode: darkMode,
-                biometric: biometric,
-                dynamicColor: dynamicColor,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> currency = const Value.absent(),
                 Value<bool> darkMode = const Value.absent(),
-                Value<bool> biometric = const Value.absent(),
-                Value<bool> dynamicColor = const Value.absent(),
               }) => SettingsCompanion.insert(
                 id: id,
                 currency: currency,
                 darkMode: darkMode,
-                biometric: biometric,
-                dynamicColor: dynamicColor,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
