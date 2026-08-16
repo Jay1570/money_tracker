@@ -5,7 +5,7 @@ import 'package:money_tracker/core/database/tables/enums.dart';
 class Budgets extends Table {
   IntColumn get id => integer().autoIncrement()();
 
-  IntColumn get categoryId => integer().references(Categories, #id)();
+  IntColumn get categoryId => integer().references(Categories, #id).nullable()();
 
   RealColumn get amount => real()();
 

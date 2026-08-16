@@ -2013,9 +2013,9 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
   late final GeneratedColumn<int> categoryId = GeneratedColumn<int>(
     'category_id',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.int,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES categories (id)',
     ),
@@ -2089,8 +2089,6 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
         _categoryIdMeta,
         categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_categoryIdMeta);
     }
     if (data.containsKey('amount')) {
       context.handle(
@@ -2132,7 +2130,7 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
       categoryId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}category_id'],
-      )!,
+      ),
       amount: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}amount'],
@@ -2165,14 +2163,14 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
 
 class Budget extends DataClass implements Insertable<Budget> {
   final int id;
-  final int categoryId;
+  final int? categoryId;
   final double amount;
   final BudgetPeriod period;
   final DateTime startDate;
   final DateTime endDate;
   const Budget({
     required this.id,
-    required this.categoryId,
+    this.categoryId,
     required this.amount,
     required this.period,
     required this.startDate,
@@ -2182,7 +2180,9 @@ class Budget extends DataClass implements Insertable<Budget> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    map['category_id'] = Variable<int>(categoryId);
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<int>(categoryId);
+    }
     map['amount'] = Variable<double>(amount);
     {
       map['period'] = Variable<int>(
@@ -2197,7 +2197,9 @@ class Budget extends DataClass implements Insertable<Budget> {
   BudgetsCompanion toCompanion(bool nullToAbsent) {
     return BudgetsCompanion(
       id: Value(id),
-      categoryId: Value(categoryId),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
       amount: Value(amount),
       period: Value(period),
       startDate: Value(startDate),
@@ -2212,7 +2214,7 @@ class Budget extends DataClass implements Insertable<Budget> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Budget(
       id: serializer.fromJson<int>(json['id']),
-      categoryId: serializer.fromJson<int>(json['categoryId']),
+      categoryId: serializer.fromJson<int?>(json['categoryId']),
       amount: serializer.fromJson<double>(json['amount']),
       period: $BudgetsTable.$converterperiod.fromJson(
         serializer.fromJson<int>(json['period']),
@@ -2226,7 +2228,7 @@ class Budget extends DataClass implements Insertable<Budget> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'categoryId': serializer.toJson<int>(categoryId),
+      'categoryId': serializer.toJson<int?>(categoryId),
       'amount': serializer.toJson<double>(amount),
       'period': serializer.toJson<int>(
         $BudgetsTable.$converterperiod.toJson(period),
@@ -2238,14 +2240,14 @@ class Budget extends DataClass implements Insertable<Budget> {
 
   Budget copyWith({
     int? id,
-    int? categoryId,
+    Value<int?> categoryId = const Value.absent(),
     double? amount,
     BudgetPeriod? period,
     DateTime? startDate,
     DateTime? endDate,
   }) => Budget(
     id: id ?? this.id,
-    categoryId: categoryId ?? this.categoryId,
+    categoryId: categoryId.present ? categoryId.value : this.categoryId,
     amount: amount ?? this.amount,
     period: period ?? this.period,
     startDate: startDate ?? this.startDate,
@@ -2294,7 +2296,7 @@ class Budget extends DataClass implements Insertable<Budget> {
 
 class BudgetsCompanion extends UpdateCompanion<Budget> {
   final Value<int> id;
-  final Value<int> categoryId;
+  final Value<int?> categoryId;
   final Value<double> amount;
   final Value<BudgetPeriod> period;
   final Value<DateTime> startDate;
@@ -2309,13 +2311,12 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
   });
   BudgetsCompanion.insert({
     this.id = const Value.absent(),
-    required int categoryId,
+    this.categoryId = const Value.absent(),
     required double amount,
     required BudgetPeriod period,
     required DateTime startDate,
     required DateTime endDate,
-  }) : categoryId = Value(categoryId),
-       amount = Value(amount),
+  }) : amount = Value(amount),
        period = Value(period),
        startDate = Value(startDate),
        endDate = Value(endDate);
@@ -2339,7 +2340,7 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
 
   BudgetsCompanion copyWith({
     Value<int>? id,
-    Value<int>? categoryId,
+    Value<int?>? categoryId,
     Value<double>? amount,
     Value<BudgetPeriod>? period,
     Value<DateTime>? startDate,
@@ -5427,7 +5428,7 @@ typedef $$TransactionTagsTableProcessedTableManager =
 typedef $$BudgetsTableCreateCompanionBuilder =
     BudgetsCompanion Function({
       Value<int> id,
-      required int categoryId,
+      Value<int?> categoryId,
       required double amount,
       required BudgetPeriod period,
       required DateTime startDate,
@@ -5436,7 +5437,7 @@ typedef $$BudgetsTableCreateCompanionBuilder =
 typedef $$BudgetsTableUpdateCompanionBuilder =
     BudgetsCompanion Function({
       Value<int> id,
-      Value<int> categoryId,
+      Value<int?> categoryId,
       Value<double> amount,
       Value<BudgetPeriod> period,
       Value<DateTime> startDate,
@@ -5450,9 +5451,9 @@ final class $$BudgetsTableReferences
   static $CategoriesTable _categoryIdTable(_$AppDatabase db) =>
       db.categories.createAlias('budgets__category_id__categories__id');
 
-  $$CategoriesTableProcessedTableManager get categoryId {
-    final $_column = $_itemColumn<int>('category_id')!;
-
+  $$CategoriesTableProcessedTableManager? get categoryId {
+    final $_column = $_itemColumn<int>('category_id');
+    if ($_column == null) return null;
     final manager = $$CategoriesTableTableManager(
       $_db,
       $_db.categories,
@@ -5659,7 +5660,7 @@ class $$BudgetsTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                Value<int> categoryId = const Value.absent(),
+                Value<int?> categoryId = const Value.absent(),
                 Value<double> amount = const Value.absent(),
                 Value<BudgetPeriod> period = const Value.absent(),
                 Value<DateTime> startDate = const Value.absent(),
@@ -5675,7 +5676,7 @@ class $$BudgetsTableTableManager
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                required int categoryId,
+                Value<int?> categoryId = const Value.absent(),
                 required double amount,
                 required BudgetPeriod period,
                 required DateTime startDate,

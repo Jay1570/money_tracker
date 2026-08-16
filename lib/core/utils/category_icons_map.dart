@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Maps a category's stored `icon` key (a short snake_case string, e.g.
 /// "shopping", "food") to a Material icon for display in the category

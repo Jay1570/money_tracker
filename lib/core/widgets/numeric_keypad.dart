@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A self-contained calculator-style keypad for amount entry: digits, a
 /// running left-to-right expression across all four operators, a date

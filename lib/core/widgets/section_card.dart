@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A rounded surface container used for grouped info blocks (net worth,
 /// monthly stats, budget progress, etc).

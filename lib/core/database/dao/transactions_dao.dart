@@ -209,6 +209,41 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  Future<List<TransactionWithJoin>> getTransactionsByCategoryInRange(
+    int categoryId, {
+    required DateTime startDate,
+    required DateTime endDate,
+  }) {
+    final sourceAccount = alias(accounts, 'sourceAccount');
+    final transferAccountTable = alias(accounts, 'transferAccount');
+
+    final query =
+        select(transactions).join([
+          leftOuterJoin(
+            categories,
+            categories.id.equalsExp(transactions.categoryId),
+          ),
+          innerJoin(
+            sourceAccount,
+            sourceAccount.id.equalsExp(transactions.accountId),
+          ),
+          leftOuterJoin(
+            transferAccountTable,
+            transferAccountTable.id.equalsExp(transactions.transferAccountId),
+          ),
+        ])..where(
+          transactions.categoryId.equals(categoryId) &
+              (transactions.transactionDate.isBiggerOrEqualValue(startDate) &
+                  transactions.transactionDate.isSmallerOrEqualValue(endDate)),
+        );
+
+    return query.get().then(
+      (rows) => rows
+          .map((row) => _mapRow(row, sourceAccount, transferAccountTable))
+          .toList(),
+    );
+  }
+
   Stream<List<TransactionWithJoin>> watchTransactionsByCategory(
     int categoryId,
   ) {
@@ -267,6 +302,41 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
     return query.watch().map(
       (rows) => rows
           .map((row) => _mapRow(row, sourceAccount, transferAccountTable))
+          .toList(),
+    );
+  }
+
+  Future<List<TransactionWithJoin>> getTransactionsInRange(
+    DateTime start,
+    DateTime end,
+  ) {
+    final sourceAccount = alias(accounts, 'sourceAccount');
+    final transferAccount = alias(accounts, 'transferAccount');
+
+    final query =
+        select(transactions).join([
+            leftOuterJoin(
+              categories,
+              categories.id.equalsExp(transactions.categoryId),
+            ),
+            innerJoin(
+              sourceAccount,
+              sourceAccount.id.equalsExp(transactions.accountId),
+            ),
+            leftOuterJoin(
+              transferAccount,
+              transferAccount.id.equalsExp(transactions.transferAccountId),
+            ),
+          ])
+          ..where(
+            transactions.transactionDate.isBiggerOrEqualValue(start) &
+                transactions.transactionDate.isSmallerOrEqualValue(end),
+          )
+          ..orderBy([OrderingTerm.desc(transactions.transactionDate)]);
+
+    return query.get().then(
+      (rows) => rows
+          .map((row) => _mapRow(row, sourceAccount, transferAccount))
           .toList(),
     );
   }

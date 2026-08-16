@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:money_tracker/core/database/app_database.dart';
 import 'package:money_tracker/core/database/tables/enums.dart';
+import 'package:money_tracker/core/models/transaction.dart';
 import 'package:money_tracker/core/utils/date_math.dart';
 
 /// A budget combined with how much has actually been spent against it.
@@ -37,7 +38,7 @@ class BudgetsRepository {
   /// doesn't get "budgeted" in the usual sense. If [endDate] is omitted,
   /// it's derived automatically from [period] and [startDate].
   Future<int> createBudget({
-    required int categoryId,
+    required int? categoryId,
     required double amount,
     required BudgetPeriod period,
     required DateTime startDate,
@@ -47,12 +48,16 @@ class BudgetsRepository {
       throw ArgumentError('Budget amount must be greater than zero');
     }
 
-    final category = await _db.categoriesDao.getCategoryById(categoryId);
-    if (category == null) {
-      throw StateError('Category $categoryId does not exist');
-    }
-    if (category.type != CategoryType.expense) {
-      throw ArgumentError('Budgets can only be created for expense categories');
+    if (categoryId != null) {
+      final category = await _db.categoriesDao.getCategoryById(categoryId);
+      if (category == null) {
+        throw StateError('Category $categoryId does not exist');
+      }
+      if (category.type != CategoryType.expense) {
+        throw ArgumentError(
+          'Budgets can only be created for expense categories',
+        );
+      }
     }
 
     final resolvedEndDate = endDate ?? endDateForPeriod(startDate, period);
@@ -62,7 +67,7 @@ class BudgetsRepository {
 
     return _db.budgetsDao.insertBudget(
       BudgetsCompanion.insert(
-        categoryId: categoryId,
+        categoryId: Value(categoryId),
         amount: amount,
         period: period,
         startDate: startDate,
@@ -124,10 +129,22 @@ class BudgetsRepository {
   }
 
   Future<BudgetProgress> _progressFor(Budget budget) async {
-    final categoryTransactions = await _db.transactionsDao
-        .getTransactionsByCategory(budget.categoryId);
+    List<TransactionWithJoin> transactions = [];
 
-    final spent = categoryTransactions
+    if (budget.categoryId != null) {
+      transactions = await _db.transactionsDao.getTransactionsByCategoryInRange(
+        budget.categoryId!,
+        startDate: budget.startDate,
+        endDate: budget.endDate,
+      );
+    } else {
+      transactions = await _db.transactionsDao.getTransactionsInRange(
+        budget.startDate,
+        budget.endDate,
+      );
+    }
+
+    final spent = transactions
         .where(
           (tx) =>
               tx.type == TransactionType.expense &&

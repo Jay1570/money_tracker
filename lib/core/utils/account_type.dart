@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:money_tracker/core/database/tables/enums.dart';
 
 String accountTypeLabel(AccountType type) {

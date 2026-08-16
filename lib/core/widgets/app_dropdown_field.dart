@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A dropdown field styled to match [AppTextField] — same amber label bar,
 /// same border treatment — so forms can mix text and dropdown fields
