@@ -18,9 +18,13 @@ class AddTransactionScreen extends ConsumerStatefulWidget {
   const AddTransactionScreen({
     super.key,
     this.isRecurring = false,
+    this.transactionId,
   });
 
   final bool isRecurring;
+  final int? transactionId;
+
+  bool get isEditing => transactionId != null;
 
   @override
   ConsumerState<AddTransactionScreen> createState() =>
@@ -41,6 +45,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   String _note = '';
   DateTime _date = DateTime.now();
   bool _saving = false;
+  bool _isLoading = false;
 
   // Recurring toggle — when on, saving this transaction also schedules it
   // as the template for a recurring series via
@@ -58,6 +63,46 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   bool get _readyForAmountEntry =>
       _account != null &&
       (_type != TransactionType.transfer || _transferAccount != null);
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isEditing) {
+      _isLoading = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadTransaction());
+    }
+  }
+
+  Future<void> _loadTransaction() async {
+    try {
+      final txJoin = await ref
+          .read(transactionsRepositoryProvider)
+          .getTransactionById(widget.transactionId!);
+      if (!mounted) return;
+      if (txJoin == null) {
+        AppSnackbar.showError(message: 'Transaction not found', title: 'Error');
+        context.pop();
+        return;
+      }
+      setState(() {
+        _type = txJoin.type;
+        _amount = txJoin.amount;
+        _displayExpression = txJoin.amount.toStringAsFixed(
+            txJoin.amount.truncateToDouble() == txJoin.amount ? 0 : 2);
+        _category = txJoin.category;
+        _account = txJoin.account;
+        _transferAccount = txJoin.transferAccount;
+        _note = txJoin.note ?? '';
+        _date = txJoin.transactionDate;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        AppSnackbar.showError(message: e.toString(), title: 'Error');
+        context.pop();
+      }
+    }
+  }
 
   void _onAmountChanged(double value, String expression) {
     setState(() {
@@ -77,7 +122,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 
     if (_type == TransactionType.transfer && _transferAccount == null) {
       final destination = await _pickAccount(
-        excludeAccountId: _account!.id,
         title: 'Transfer To',
       );
       if (destination != null) {
@@ -105,13 +149,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   }
 
   Future<void> _changeSourceAccount() async {
-    final account = await _pickAccount(excludeAccountId: _transferAccount?.id);
+    final account = await _pickAccount();
     if (account != null) setState(() => _account = account);
   }
 
   Future<void> _changeTransferAccount() async {
     final account = await _pickAccount(
-      excludeAccountId: _account?.id,
       title: 'Transfer To',
     );
     if (account != null) setState(() => _transferAccount = account);
@@ -125,11 +168,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       _transferAccount = null;
       _amount = 0;
       _displayExpression = '0';
-      // NumericKeypad's own internal state resets separately, since it's
-      // keyed by _type below — this just keeps the mirrored display in
-      // sync until that remount reports back in.
-      // Deliberately not resetting _isRecurring/_frequency — a recurring
-      // intent set before switching tabs is still reasonable to keep.
     });
   }
 
@@ -158,9 +196,16 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     final account = _account;
     final amount = _amount;
 
-    if (category == null || account == null || amount <= 0) {
+    if (account == null || amount <= 0) {
       AppSnackbar.showError(
-        message: 'Pick a category and enter an amount',
+        message: 'Pick an account and enter an amount',
+        title: "Error",
+      );
+      return;
+    }
+    if (_type != TransactionType.transfer && category == null) {
+      AppSnackbar.showError(
+        message: 'Pick a category',
         title: "Error",
       );
       return;
@@ -178,48 +223,85 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     final note = _note.trim().isEmpty ? null : _note.trim();
 
     try {
-      late final int transactionId;
+      if (widget.isEditing) {
+        // --- UPDATE existing transaction ---
+        final txId = widget.transactionId!;
+        switch (_type) {
+          case TransactionType.expense:
+            await repo.updateExpense(
+              transactionId: txId,
+              amount: amount,
+              accountId: account.id,
+              categoryId: category!.id,
+              note: note,
+              transactionDate: _date,
+            );
+            break;
+          case TransactionType.income:
+            await repo.updateIncome(
+              transactionId: txId,
+              amount: amount,
+              accountId: account.id,
+              categoryId: category!.id,
+              note: note,
+              transactionDate: _date,
+            );
+            break;
+          case TransactionType.transfer:
+            await repo.updateTransfer(
+              transactionId: txId,
+              amount: amount,
+              accountId: account.id,
+              categoryId: category?.id,
+              transferAccountId: _transferAccount!.id,
+              note: note,
+              transactionDate: _date,
+            );
+            break;
+        }
+      } else {
+        // --- ADD new transaction ---
+        late final int transactionId;
+        switch (_type) {
+          case TransactionType.expense:
+            transactionId = await repo.addExpense(
+              amount: amount,
+              accountId: account.id,
+              categoryId: category!.id,
+              note: note,
+              transactionDate: _date,
+            );
+            break;
+          case TransactionType.income:
+            transactionId = await repo.addIncome(
+              amount: amount,
+              accountId: account.id,
+              categoryId: category!.id,
+              note: note,
+              transactionDate: _date,
+            );
+            break;
+          case TransactionType.transfer:
+            transactionId = await repo.addTransfer(
+              amount: amount,
+              accountId: account.id,
+              categoryId: category?.id,
+              transferAccountId: _transferAccount!.id,
+              note: note,
+              transactionDate: _date,
+            );
+            break;
+        }
 
-      switch (_type) {
-        case TransactionType.expense:
-          transactionId = await repo.addExpense(
-            amount: amount,
-            accountId: account.id,
-            categoryId: category.id,
-            note: note,
-            transactionDate: _date,
+        if (widget.isRecurring) {
+          final recurringRepo = ref.read(recurringTransactionsRepositoryProvider);
+          await recurringRepo.scheduleRecurring(
+            templateTransactionId: transactionId,
+            frequency: _frequency,
+            nextRun: recurringRepo.nextRunAfter(_date, _frequency),
           );
-          break;
-        case TransactionType.income:
-          transactionId = await repo.addIncome(
-            amount: amount,
-            accountId: account.id,
-            categoryId: category.id,
-            note: note,
-            transactionDate: _date,
-          );
-          break;
-        case TransactionType.transfer:
-          transactionId = await repo.addTransfer(
-            amount: amount,
-            accountId: account.id,
-            categoryId: category.id,
-            transferAccountId: _transferAccount!.id,
-            note: note,
-            transactionDate: _date,
-          );
-          break;
-      }
-
-      if (widget.isRecurring) {
-        final recurringRepo = ref.read(recurringTransactionsRepositoryProvider);
-        await recurringRepo.scheduleRecurring(
-          templateTransactionId: transactionId,
-          frequency: _frequency,
-          nextRun: recurringRepo.nextRunAfter(_date, _frequency),
-        );
-
-        await recurringRepo.processDueRecurringTransactions();
+          await recurringRepo.processDueRecurringTransactions();
+        }
       }
 
       if (mounted) context.pop();
@@ -227,6 +309,40 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       if (mounted) {
         setState(() => _saving = false);
         AppSnackbar.showError(message: e.toString(), title: "Error");
+      }
+    }
+  }
+
+  Future<void> _delete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Transaction'),
+        content: const Text('Are you sure you want to delete this transaction?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _saving = true);
+    try {
+      await ref
+          .read(transactionsRepositoryProvider)
+          .deleteTransaction(widget.transactionId!);
+      if (mounted) context.pop();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        AppSnackbar.showError(message: e.toString(), title: 'Error');
       }
     }
   }
@@ -241,6 +357,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     final colors = Theme.of(context).colorScheme;
 
     return AppScaffold(
+      showFabButton: false,
+      showBottomBar: false,
       appBar: AppBar(
         backgroundColor: colors.surfaceContainer,
         elevation: 0,
@@ -250,13 +368,23 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
           child: const Text('Cancel'),
         ),
         centerTitle: true,
-        title: const Text('Add', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          widget.isEditing ? 'Edit' : 'Add',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
-          IconButton(
-            tooltip: 'Recurring transactions',
-            onPressed: () => context.push('/recurring-transactions'),
-            icon: const Icon(Icons.event_repeat),
-          ),
+          if (widget.isEditing)
+            IconButton(
+              tooltip: 'Delete transaction',
+              onPressed: _saving ? null : _delete,
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+            )
+          else
+            IconButton(
+              tooltip: 'Recurring transactions',
+              onPressed: () => context.push('/recurring-transactions'),
+              icon: const Icon(Icons.event_repeat),
+            ),
         ],
       ),
       body: SafeArea(
@@ -283,17 +411,37 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: categoriesAsync.when(
-                      data: (categories) => _CategoryGrid(
-                        categories: categories,
-                        selectedId: _category?.id,
-                        onTap: _saving ? (_) {} : _onCategoryTap,
-                      ),
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
-                      error: (e, _) => Center(child: Text(e.toString())),
-                    ),
+                    child: _type == TransactionType.transfer
+                        ? _TransferAccountPickerGrid(
+                            fromAccount: _account,
+                            toAccount: _transferAccount,
+                            onPickFrom: () async {
+                              final acc = await _pickAccount();
+                              if (acc != null) setState(() => _account = acc);
+                            },
+                            onPickTo: () async {
+                              final acc = await _pickAccount(title: 'Transfer To');
+                              if (acc != null) setState(() => _transferAccount = acc);
+                            },
+                          )
+                        : categoriesAsync.when(
+                            data: (categories) => _CategoryGrid(
+                              categories: categories,
+                              selectedId: _category?.id,
+                              onTap: _saving ? (_) {} : _onCategoryTap,
+                            ),
+                            loading: () =>
+                                const Center(child: CircularProgressIndicator()),
+                            error: (e, _) => Center(child: Text(e.toString())),
+                          ),
                   ),
+                  if (_isLoading)
+                    const Positioned.fill(
+                      child: ColoredBox(
+                        color: Colors.black45,
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                    ),
                   if (_readyForAmountEntry)
                     Positioned(
                       left: 0,
@@ -444,7 +592,7 @@ class _CategoryGrid extends StatelessWidget {
 
 // --- Amount entry panel ---------------------------------------------------
 
-class _AmountEntryPanel extends StatelessWidget {
+class _AmountEntryPanel extends StatefulWidget {
   const _AmountEntryPanel({
     required this.type,
     required this.account,
@@ -482,6 +630,25 @@ class _AmountEntryPanel extends StatelessWidget {
   final ValueChanged<RecurringFrequency> onFrequencyChanged;
 
   @override
+  State<_AmountEntryPanel> createState() => _AmountEntryPanelState();
+}
+
+class _AmountEntryPanelState extends State<_AmountEntryPanel> {
+  late final TextEditingController _noteController;
+
+  @override
+  void initState() {
+    super.initState();
+    _noteController = TextEditingController(text: widget.note);
+  }
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
@@ -497,16 +664,16 @@ class _AmountEntryPanel extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: type == TransactionType.transfer
+                child: widget.type == TransactionType.transfer
                     ? _TransferAccountsRow(
-                        from: account,
-                        to: transferAccount,
-                        onTapFrom: saving ? null : onChangeSourceAccount,
-                        onTapTo: saving ? null : onChangeTransferAccount,
+                        from: widget.account,
+                        to: widget.transferAccount,
+                        onTapFrom: widget.saving ? null : widget.onChangeSourceAccount,
+                        onTapTo: widget.saving ? null : widget.onChangeTransferAccount,
                       )
                     : InkWell(
-                        onTap: saving ? null : onChangeSourceAccount,
-                        child: _SingleAccountRow(account: account),
+                        onTap: widget.saving ? null : widget.onChangeSourceAccount,
+                        child: _SingleAccountRow(account: widget.account),
                       ),
               ),
               const SizedBox(width: 8),
@@ -515,7 +682,7 @@ class _AmountEntryPanel extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerRight,
                   child: Text(
-                    displayAmount,
+                    widget.displayAmount,
                     textAlign: TextAlign.right,
                     style: const TextStyle(
                       fontSize: 28,
@@ -542,7 +709,8 @@ class _AmountEntryPanel extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
-                    onChanged: onNoteChanged,
+                    controller: _noteController,
+                    onChanged: widget.onNoteChanged,
                     style: TextStyle(color: colors.onSurface),
                     decoration: InputDecoration(
                       hintText: 'Enter a note...',
@@ -568,10 +736,10 @@ class _AmountEntryPanel extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _RecurringRow(
-            isRecurring: isRecurring,
-            frequency: frequency,
-            enabled: !saving,
-            onFrequencyChanged: onFrequencyChanged,
+            isRecurring: widget.isRecurring,
+            frequency: widget.frequency,
+            enabled: !widget.saving,
+            onFrequencyChanged: widget.onFrequencyChanged,
           ),
           const SizedBox(height: 8),
           NumericKeypad(
@@ -579,11 +747,11 @@ class _AmountEntryPanel extends StatelessWidget {
             // calculator fresh — keying by `type` forces Flutter to
             // remount NumericKeypad with new internal state rather than
             // carrying over whatever was being typed on the previous tab.
-            key: ValueKey(type),
-            onChanged: onAmountChanged,
-            onDateTap: onDateTap,
-            dateLabel: dateLabel,
-            onConfirm: saving ? () {} : onConfirm,
+            key: ValueKey(widget.type),
+            onChanged: widget.onAmountChanged,
+            onDateTap: widget.onDateTap,
+            dateLabel: widget.dateLabel,
+            onConfirm: widget.saving ? () {} : widget.onConfirm,
           ),
         ],
       ),
@@ -760,6 +928,130 @@ class _TransferAccountsRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// --- Transfer account picker grid ----------------------------------------
+
+class _TransferAccountPickerGrid extends StatelessWidget {
+  const _TransferAccountPickerGrid({
+    required this.fromAccount,
+    required this.toAccount,
+    required this.onPickFrom,
+    required this.onPickTo,
+  });
+
+  final Account? fromAccount;
+  final Account? toAccount;
+  final VoidCallback onPickFrom;
+  final VoidCallback onPickTo;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(child: _AccountPickerCard(
+              account: fromAccount,
+              label: 'From',
+              onTap: onPickFrom,
+            )),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.arrow_forward, color: colors.onSurfaceVariant, size: 28),
+                ],
+              ),
+            ),
+            Expanded(child: _AccountPickerCard(
+              account: toAccount,
+              label: 'To',
+              onTap: onPickTo,
+            )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountPickerCard extends StatelessWidget {
+  const _AccountPickerCard({
+    required this.account,
+    required this.label,
+    required this.onTap,
+  });
+
+  final Account? account;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final hasAccount = account != null;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: Container(
+          decoration: BoxDecoration(
+            color: hasAccount ? colors.primary.withAlpha(30) : colors.surfaceContainer,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: hasAccount ? colors.primary : colors.outlineVariant,
+              width: 2,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (hasAccount) ...[
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: colors.primary,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    accountTypeIcon(account!.type),
+                    color: colors.onPrimary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    account!.name,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                ),
+              ] else ...[
+                Icon(Icons.add, size: 36, color: colors.onSurfaceVariant),
+                const SizedBox(height: 8),
+                Text(
+                  label,
+                  style: TextStyle(color: colors.onSurfaceVariant, fontSize: 13),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

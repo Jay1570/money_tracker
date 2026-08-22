@@ -34,6 +34,54 @@ class BudgetsRepository {
   Stream<List<Budget>> watchActiveBudgets({DateTime? asOf}) =>
       _db.budgetsDao.watchActiveBudgets(asOf: asOf);
 
+  Future<List<int>> renewExpiredBudgets({DateTime? asOf}) async {
+    final now = asOf ?? DateTime.now();
+    final all = await _db.budgetsDao.getAllBudgets();
+
+    final expired = all.where((b) => b.endDate.isBefore(now));
+
+    final newIds = <int>[];
+    for (final budget in expired) {
+      // Skip if a renewal already exists (same category+period starting
+      // right after this one ended) to avoid duplicate chains if this
+      // ever runs twice before the stream refreshes.
+      final alreadyRenewed = all.any(
+        (b) =>
+            b.categoryId == budget.categoryId &&
+            b.period == budget.period &&
+            b.startDate.isAtSameMomentAs(
+              budget.endDate.add(const Duration(days: 1)),
+            ),
+      );
+      if (alreadyRenewed) continue;
+
+      final newId = await renewBudget(budget.id);
+      newIds.add(newId);
+    }
+
+    return newIds;
+  }
+
+  Future<int> renewBudget(
+    int budgetId, {
+    double? amount,
+    BudgetPeriod? period,
+  }) async {
+    final budget = await _db.budgetsDao.getBudgetById(budgetId);
+    if (budget == null) {
+      throw StateError('Budget $budgetId does not exist');
+    }
+
+    final newStartDate = budget.endDate.add(const Duration(days: 1));
+
+    return createBudget(
+      categoryId: budget.categoryId,
+      amount: amount ?? budget.amount,
+      period: period ?? budget.period,
+      startDate: newStartDate,
+    );
+  }
+
   /// Creates a budget. Only expense categories can be budgeted — income
   /// doesn't get "budgeted" in the usual sense. If [endDate] is omitted,
   /// it's derived automatically from [period] and [startDate].
@@ -118,7 +166,7 @@ class BudgetsRepository {
     final now = asOf ?? DateTime.now();
     final all = await _db.budgetsDao.getAllBudgets();
     final active = all.where(
-      (b) => !b.startDate.isAfter(now) && !b.endDate.isBefore(now),
+      (b) => b.startDate.isBefore(now) && b.endDate.isAfter(now),
     );
 
     final result = <BudgetProgress>[];

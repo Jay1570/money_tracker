@@ -18,10 +18,30 @@ DateTime _monthStart(DateTime d) => DateTime(d.year, d.month, 1);
 DateTime _monthEnd(DateTime d) =>
     DateTime(d.year, d.month + 1, 0, 23, 59, 59, 999);
 
+// --- Reports selected month (shared by Analytics and Charts tabs) ----------
+
+class SelectedReportsMonthNotifier extends Notifier<DateTime> {
+  @override
+  DateTime build() => DateTime.now();
+
+  void previousMonth() {
+    state = DateTime(state.year, state.month - 1);
+  }
+
+  void nextMonth() {
+    state = DateTime(state.year, state.month + 1);
+  }
+}
+
+final selectedReportsMonthProvider =
+    NotifierProvider<SelectedReportsMonthNotifier, DateTime>(
+  SelectedReportsMonthNotifier.new,
+);
+
 final _currentMonthRangeProvider = Provider<({DateTime start, DateTime end})>(
   (ref) {
-    final now = DateTime.now();
-    return (start: _monthStart(now), end: _monthEnd(now));
+    final month = ref.watch(selectedReportsMonthProvider);
+    return (start: _monthStart(month), end: _monthEnd(month));
   },
 );
 
@@ -70,7 +90,10 @@ class AggregatedBudgetProgress {
 final activeBudgetsProgressProvider = FutureProvider<List<BudgetProgress>>((
   ref,
 ) {
-  return ref.watch(budgetsRepositoryProvider).getActiveBudgetsProgress();
+  final month = ref.watch(selectedReportsMonthProvider);
+  // Target the selected month (using the last day of the month or middle to ensure it falls in range)
+  final targetDate = DateTime(month.year, month.month, 15);
+  return ref.watch(budgetsRepositoryProvider).getActiveBudgetsProgress(asOf: targetDate);
 });
 
 final aggregatedBudgetProvider = Provider<AggregatedBudgetProgress?>((ref) {

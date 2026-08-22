@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:money_tracker/core/database/tables/enums.dart';
 import 'package:money_tracker/core/models/transaction.dart';
 import 'package:money_tracker/core/utils/time_utils.dart';
@@ -15,9 +16,6 @@ class HomeScreen extends ConsumerWidget {
     return AppScaffold(
       appBar: const AppTopBar(
         title: "Money Tracker",
-        showMenu: true,
-        showSearch: true,
-        showCalendar: true,
       ),
       showBottomBar: true,
       showFabButton: true,
@@ -195,6 +193,7 @@ class _TransactionTile extends StatelessWidget {
           fontWeight: FontWeight.bold,
         ),
       ),
+      onTap: () => context.push('/transaction/edit/${tx.id}'),
     );
   }
 }

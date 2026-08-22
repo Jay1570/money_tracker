@@ -7,18 +7,12 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
     this.onMenuTap,
     this.onSearchTap,
     this.onCalendarTap,
-    required this.showMenu,
-    required this.showSearch,
-    required this.showCalendar,
   });
 
   final String title;
   final VoidCallback? onMenuTap;
   final VoidCallback? onSearchTap;
   final VoidCallback? onCalendarTap;
-  final bool showMenu;
-  final bool showSearch;
-  final bool showCalendar;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +22,7 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       centerTitle: true,
       backgroundColor: colors.surfaceContainer,
-      leading: showMenu
+      leading: onMenuTap != null
           ? IconButton(
               icon: const Icon(Icons.menu),
               onPressed: onMenuTap,
@@ -42,12 +36,12 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
-        if (showSearch)
+        if (onSearchTap != null)
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: onSearchTap,
           ),
-        if (showCalendar)
+        if (onCalendarTap != null)
           IconButton(
             icon: const Icon(Icons.calendar_today_outlined),
             onPressed: onCalendarTap,

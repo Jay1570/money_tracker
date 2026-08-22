@@ -45,7 +45,7 @@ class TransactionsRepository {
   Future<int> addTransfer({
     required double amount,
     required int accountId,
-    required int categoryId,
+    required int? categoryId,
     String? note,
     required DateTime transactionDate,
     required int transferAccountId,
@@ -103,7 +103,7 @@ class TransactionsRepository {
     required int transactionId,
     required double amount,
     required int accountId,
-    required int categoryId,
+    required int? categoryId,
     String? note,
     required DateTime transactionDate,
     required int transferAccountId,

@@ -45,5 +45,6 @@ final appStartupServiceProvider = Provider<AppStartupService>((ref) {
   return AppStartupService(
     ref.watch(transactionsRepositoryProvider),
     ref.watch(recurringTransactionsRepositoryProvider),
+    ref.watch(budgetsRepositoryProvider),
   );
 });

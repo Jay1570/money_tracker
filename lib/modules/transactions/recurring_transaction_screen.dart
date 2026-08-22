@@ -7,6 +7,8 @@ import 'package:money_tracker/core/database/tables/enums.dart';
 import 'package:money_tracker/core/utils/currency_format.dart';
 import 'package:money_tracker/modules/reports/reports_provider.dart'
     show currencyCodeProvider;
+import 'package:money_tracker/core/widgets/app_snackbar.dart';
+import 'package:money_tracker/core/providers/repository_providers.dart';
 import 'package:money_tracker/modules/transactions/recurring_transaction_provider.dart';
 
 class RecurringTransactionsScreen extends ConsumerWidget {
@@ -18,7 +20,6 @@ class RecurringTransactionsScreen extends ConsumerWidget {
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xff171717),
       appBar: AppBar(
         backgroundColor: colors.surfaceContainer,
         elevation: 0,
@@ -34,19 +35,19 @@ class RecurringTransactionsScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
               children: [
                 if (items.isEmpty)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.symmetric(vertical: 60),
                     child: Center(
                       child: Text(
                         'No recurring transactions yet',
-                        style: TextStyle(color: Colors.white54),
+                        style: TextStyle(color: colors.outline),
                       ),
                     ),
                   )
                 else
                   for (final recurring in items) ...[
                     _RecurringTile(recurring: recurring),
-                    const Divider(color: Colors.white12, height: 1),
+                    Divider(color: colors.outlineVariant, height: 1),
                   ],
                 const SizedBox(height: 20),
                 SizedBox(
@@ -56,7 +57,7 @@ class RecurringTransactionsScreen extends ConsumerWidget {
                         context.push('/recurring-transactions/add'),
                     style: FilledButton.styleFrom(
                       backgroundColor: colors.primary,
-                      foregroundColor: Colors.black,
+                      foregroundColor: colors.onPrimary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(28),
@@ -91,6 +92,7 @@ class _RecurringTile extends ConsumerWidget {
       recurringTransactionDetailsProvider(recurring.transactionId),
     );
     final currency = ref.watch(currencyCodeProvider).value ?? 'INR';
+    final colors = Theme.of(context).colorScheme;
 
     return detailsAsync.when(
       data: (details) {
@@ -125,7 +127,7 @@ class _RecurringTile extends ConsumerWidget {
                     const SizedBox(height: 4),
                     Text(
                       _frequencyLabel(recurring.frequency),
-                      style: const TextStyle(color: Colors.white54),
+                      style: TextStyle(color: colors.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -139,10 +141,10 @@ class _RecurringTile extends ConsumerWidget {
                     ),
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.arrow_forward,
                           size: 14,
-                          color: Colors.white54,
+                          color: colors.outline,
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -161,7 +163,56 @@ class _RecurringTile extends ConsumerWidget {
                   ),
                 ),
               const SizedBox(width: 4),
-              const Icon(Icons.chevron_right, color: Colors.white24, size: 20),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.redAccent),
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Delete Recurring Transaction'),
+                      content: const Text(
+                        'Are you sure you want to delete this recurring transaction series?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          child: const Text(
+                            'Delete',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    try {
+                      await ref
+                          .read(recurringTransactionsRepositoryProvider)
+                          .deleteRecurring(recurring.id);
+                      AppSnackbar.showSuccess(
+                        message: 'Recurring transaction deleted',
+                        title: 'Success',
+                      );
+                    } catch (e) {
+                      AppSnackbar.showError(
+                        message: e.toString(),
+                        title: 'Error',
+                      );
+                    }
+                  }
+                },
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () => context.push(
+                  '/transaction/edit/${recurring.transactionId}',
+                ),
+              ),
             ],
           ),
         );

@@ -17,12 +17,6 @@ class BottomBarItem {
     route: '/home',
   );
 
-  static const charts = BottomBarItem(
-    label: 'Charts',
-    icon: Icons.pie_chart_outline,
-    route: '/charts',
-  );
-
   static const reports = BottomBarItem(
     label: 'Reports',
     icon: Icons.article_outlined,
@@ -37,7 +31,6 @@ class BottomBarItem {
 
   static const values = [
     home,
-    charts,
     reports,
     settings,
   ];

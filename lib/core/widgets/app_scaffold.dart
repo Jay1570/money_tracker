@@ -48,7 +48,7 @@ class AppScaffold extends StatelessWidget {
               child: const Icon(Icons.add, size: 36),
             )
           : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }

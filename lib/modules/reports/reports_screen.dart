@@ -19,30 +19,58 @@ class ReportsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tab = ref.watch(reportsTabProvider);
-
+    final selectedMonth = ref.watch(selectedReportsMonthProvider);
     return AppScaffold(
       appBar: const AppTopBar(
         title: 'Reports',
-        showMenu: false,
-        showSearch: false,
-        showCalendar: false,
       ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+            padding: EdgeInsets.fromLTRB(20, 16, 20, tab == ReportsTab.accounts ? 12 : 0),
             child: SegmentedToggle<ReportsTab>(
               value: tab,
               options: ReportsTab.values,
-              labelBuilder: (t) =>
-                  t == ReportsTab.analytics ? 'Analytics' : 'Accounts',
+              labelBuilder: (t) => switch (t) {
+                ReportsTab.analytics => 'Analytics',
+                ReportsTab.accounts => 'Accounts',
+              },
               onChanged: (t) => ref.read(reportsTabProvider.notifier).state = t,
             ),
           ),
+          // Month navigator — only relevant for Analytics tab
+          if (tab != ReportsTab.accounts)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: () => ref
+                        .read(selectedReportsMonthProvider.notifier)
+                        .previousMonth(),
+                  ),
+                  Text(
+                    '${TimeUtils.monthAbbreviations[selectedMonth.month - 1]} ${selectedMonth.year}',
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.chevron_right,
+                    ),
+                    onPressed: () => ref
+                        .read(selectedReportsMonthProvider.notifier)
+                        .nextMonth(),
+                  ),
+                ],
+              ),
+            ),
           Expanded(
-            child: tab == ReportsTab.analytics
-                ? const _AnalyticsTab()
-                : const _AccountsTab(),
+            child: switch (tab) {
+              ReportsTab.analytics => const _AnalyticsTab(),
+              ReportsTab.accounts => const _AccountsTab(),
+            },
           ),
         ],
       ),
@@ -61,7 +89,8 @@ class _AnalyticsTab extends ConsumerWidget {
     final expense = ref.watch(reportsMonthlyExpenseProvider).value ?? 0;
     final balance = ref.watch(reportsMonthlyBalanceProvider);
     final aggregatedBudget = ref.watch(aggregatedBudgetProvider);
-    final monthLabel = TimeUtils.monthAbbreviations[DateTime.now().month - 1];
+    final selectedMonth = ref.watch(selectedReportsMonthProvider);
+    final monthLabel = TimeUtils.monthAbbreviations[selectedMonth.month - 1];
     final colors = Theme.of(context).colorScheme;
 
     return ListView(
@@ -76,9 +105,9 @@ class _AnalyticsTab extends ConsumerWidget {
               Row(
                 children: [
                   Text(
-                    monthLabel,
+                    '$monthLabel ${selectedMonth.year}',
                     style: const TextStyle(
-                      fontSize: 22,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -102,70 +131,86 @@ class _AnalyticsTab extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _CardHeader(title: 'Monthly Budget'),
-              const SizedBox(height: 20),
-              if (aggregatedBudget == null)
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Text(
-                    'No active budgets this month',
-                    style: TextStyle(color: colors.onSurfaceVariant),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Monthly Budget',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                )
-              else
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 110,
-                      height: 110,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          SizedBox(
-                            width: 110,
-                            height: 110,
-                            child: CircularProgressIndicator(
-                              value: aggregatedBudget.percentRemaining
-                                  .toDouble(),
-                              strokeWidth: 10,
-                              backgroundColor: colors.onSurfaceVariant,
-                              valueColor: AlwaysStoppedAnimation(
-                                colors.primary,
-                              ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.chevron_right,
+                      color: colors.onSurfaceVariant,
+                      // size: 20,
+                    ),
+                    onPressed: () => context.push('/budgets'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+            if (aggregatedBudget == null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text(
+                  'No active budgets this month',
+                  style: TextStyle(color: colors.onSurfaceVariant),
+                ),
+              )
+            else
+              Row(
+                children: [
+                  SizedBox(
+                    width: 110,
+                    height: 110,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SizedBox(
+                          width: 110,
+                          height: 110,
+                          child: CircularProgressIndicator(
+                            value: aggregatedBudget.percentRemaining
+                                .toDouble(),
+                            strokeWidth: 10,
+                            backgroundColor: colors.onSurfaceVariant,
+                            valueColor: AlwaysStoppedAnimation(
+                              colors.primary,
                             ),
                           ),
-                          Text(
-                            'Remaining\n${(aggregatedBudget.percentRemaining * 100).toStringAsFixed(0)}%',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
+                        ),
+                        Text(
+                          'Remaining\n${(aggregatedBudget.percentRemaining * 100).toStringAsFixed(0)}%',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 24),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          _BudgetRow(
-                            label: 'Remaining',
-                            value: aggregatedBudget.remaining,
-                          ),
-                          Divider(color: colors.outlineVariant, height: 20),
-                          _BudgetRow(
-                            label: 'Budget',
-                            value: aggregatedBudget.budget,
-                          ),
-                          Divider(color: colors.outlineVariant, height: 20),
-                          _BudgetRow(
-                            label: 'Expenses',
-                            value: aggregatedBudget.spent,
-                          ),
-                        ],
-                      ),
+                  ),
+                  const SizedBox(width: 24),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        _BudgetRow(
+                          label: 'Remaining',
+                          value: aggregatedBudget.remaining,
+                        ),
+                        Divider(color: colors.outlineVariant, height: 20),
+                        _BudgetRow(
+                          label: 'Budget',
+                          value: aggregatedBudget.budget,
+                        ),
+                        Divider(color: colors.outlineVariant, height: 20),
+                        _BudgetRow(
+                          label: 'Expenses',
+                          value: aggregatedBudget.spent,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-            ],
+                  ),
+                ],
+              ),
+          ],
           ),
         ),
       ],
@@ -180,7 +225,6 @@ class _CardHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -188,7 +232,6 @@ class _CardHeader extends StatelessWidget {
           title,
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
       ],
     );
   }
@@ -420,46 +463,49 @@ class _AccountTile extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final isLiability = account.type.isLiability;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: colors.primary,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(accountTypeIcon(account.type), color: colors.surface),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              account.name,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              if (isLiability)
-                Text(
-                  '( I owe )',
-                  style: TextStyle(
-                    color: colors.onSurfaceVariant,
-                    fontSize: 12,
-                  ),
-                ),
-              Text(
-                '$currency ${formatAmount(account.currentBalance)}',
-                style: const TextStyle(fontWeight: FontWeight.w600),
+    return InkWell(
+      onTap: () => context.push('/account/view/${account.id}'),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: colors.primary,
+                borderRadius: BorderRadius.circular(12),
               ),
-            ],
-          ),
-          const SizedBox(width: 4),
-          Icon(Icons.chevron_right, color: colors.outlineVariant, size: 20),
-        ],
+              child: Icon(accountTypeIcon(account.type), color: colors.surface),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                account.name,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (isLiability)
+                  Text(
+                    '( I owe )',
+                    style: TextStyle(
+                      color: colors.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
+                  ),
+                Text(
+                  '$currency ${formatAmount(account.currentBalance)}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right, color: colors.outlineVariant, size: 20),
+          ],
+        ),
       ),
     );
   }

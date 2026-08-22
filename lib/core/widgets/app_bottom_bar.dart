@@ -23,8 +23,6 @@ class AppBottomBar extends StatelessWidget {
         child: Row(
           children: [
             _buildItem(theme, BottomBarItem.home),
-            _buildItem(theme, BottomBarItem.charts),
-            const Spacer(),
             _buildItem(theme, BottomBarItem.reports),
             _buildItem(theme, BottomBarItem.settings),
           ],

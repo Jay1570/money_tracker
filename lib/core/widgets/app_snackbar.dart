@@ -68,4 +68,8 @@ class AppSnackbar {
   static void showError({required String message, required String title}) {
     show(message: message, title: title, type: SnackbarType.error);
   }
+
+  static void showSuccess({required String message, required String title}) {
+    show(message: message, title: title, type: SnackbarType.success);
+  }
 }

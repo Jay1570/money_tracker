@@ -3,11 +3,16 @@ import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:go_router/go_router.dart";
 import "package:money_tracker/main.dart";
 import "package:money_tracker/modules/accounts/add_account_screen.dart";
+import "package:money_tracker/modules/accounts/edit_account_screen.dart";
+import "package:money_tracker/modules/accounts/view_account_screen.dart";
 import "package:money_tracker/modules/home/home_screen.dart";
 import "package:money_tracker/modules/reports/reports_screen.dart";
 import "package:money_tracker/modules/settings/settings_screen.dart";
 import "package:money_tracker/modules/transactions/add_transaction_screen.dart";
 import "package:money_tracker/modules/transactions/recurring_transaction_screen.dart";
+
+import "package:money_tracker/modules/budgets/budgets_screen.dart";
+import "package:money_tracker/modules/budgets/add_budget_screen.dart";
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -38,11 +43,41 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: "/account/view/:id",
+        pageBuilder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          return buildSlidePage(
+            state: state,
+            child: ViewAccountScreen(accountId: id ?? 0),
+          );
+        },
+      ),
+      GoRoute(
+        path: "/account/edit/:id",
+        pageBuilder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          return buildSlidePage(
+            state: state,
+            child: EditAccountScreen(accountId: id ?? 0),
+          );
+        },
+      ),
+      GoRoute(
         path: "/transaction/add",
         pageBuilder: (context, state) => buildSlidePage(
           state: state,
           child: const AddTransactionScreen(),
         ),
+      ),
+      GoRoute(
+        path: "/transaction/edit/:id",
+        pageBuilder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          return buildSlidePage(
+            state: state,
+            child: AddTransactionScreen(transactionId: id),
+          );
+        },
       ),
       GoRoute(
         path: "/recurring-transactions",
@@ -66,6 +101,30 @@ final routerProvider = Provider<GoRouter>((ref) {
           state: state,
           child: const SettingsScreen(),
         ),
+      ),
+      GoRoute(
+        path: "/budgets",
+        pageBuilder: (context, state) => buildSlidePage(
+          state: state,
+          child: const BudgetsScreen(),
+        ),
+      ),
+      GoRoute(
+        path: "/budgets/add",
+        pageBuilder: (context, state) => buildSlidePage(
+          state: state,
+          child: const AddBudgetScreen(),
+        ),
+      ),
+      GoRoute(
+        path: "/budgets/edit/:id",
+        pageBuilder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          return buildSlidePage(
+            state: state,
+            child: AddBudgetScreen(budgetId: id),
+          );
+        },
       ),
 
       GoRoute(
