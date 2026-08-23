@@ -91,7 +91,7 @@ class _RecurringTile extends ConsumerWidget {
     final detailsAsync = ref.watch(
       recurringTransactionDetailsProvider(recurring.transactionId),
     );
-    final currency = ref.watch(currencyCodeProvider).value ?? 'INR';
+    final currency = ref.watch(currencyCodeProvider);
     final colors = Theme.of(context).colorScheme;
 
     return detailsAsync.when(
@@ -156,7 +156,7 @@ class _RecurringTile extends ConsumerWidget {
                 )
               else
                 Text(
-                  formatAmount(details.amount),
+                  '$currency ${formatAmount(details.amount)}',
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 16,

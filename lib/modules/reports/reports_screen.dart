@@ -237,15 +237,16 @@ class _CardHeader extends StatelessWidget {
   }
 }
 
-class _StatColumn extends StatelessWidget {
+class _StatColumn extends ConsumerWidget {
   const _StatColumn({required this.label, required this.value});
 
   final String label;
   final double value;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
+    final currency = ref.watch(currencyCodeProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,7 +254,7 @@ class _StatColumn extends StatelessWidget {
         Text(label, style: TextStyle(color: colors.onSurfaceVariant)),
         const SizedBox(height: 4),
         Text(
-          formatAmount(value),
+          '$currency ${formatAmount(value)}',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ],
@@ -261,22 +262,23 @@ class _StatColumn extends StatelessWidget {
   }
 }
 
-class _BudgetRow extends StatelessWidget {
+class _BudgetRow extends ConsumerWidget {
   const _BudgetRow({required this.label, required this.value});
 
   final String label;
   final double value;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
+    final currency = ref.watch(currencyCodeProvider);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text('$label :', style: TextStyle(color: colors.onSurfaceVariant)),
         Text(
-          formatAmount(value),
+          '$currency ${formatAmount(value)}',
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
       ],
@@ -292,7 +294,7 @@ class _AccountsTab extends ConsumerWidget {
     final netWorth = ref.watch(netWorthProvider).value ?? 0;
     final assetsLiabilities = ref.watch(assetsAndLiabilitiesProvider);
     final grouped = ref.watch(groupedAccountsProvider);
-    final currency = ref.watch(currencyCodeProvider).value ?? 'INR';
+    final currency = ref.watch(currencyCodeProvider);
     final colors = Theme.of(context).colorScheme;
 
     return ListView(
@@ -319,7 +321,7 @@ class _AccountsTab extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    formatAmount(netWorth),
+                    '$currency ${formatAmount(netWorth)}',
                     style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -396,15 +398,16 @@ class _AccountsTab extends ConsumerWidget {
   }
 }
 
-class _NetWorthColumn extends StatelessWidget {
+class _NetWorthColumn extends ConsumerWidget {
   const _NetWorthColumn({required this.label, required this.value});
 
   final String label;
   final double value;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
+    final currency = ref.watch(currencyCodeProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -412,7 +415,7 @@ class _NetWorthColumn extends StatelessWidget {
         Text(label, style: TextStyle(color: colors.onSurfaceVariant)),
         const SizedBox(height: 4),
         Text(
-          formatAmount(value),
+          '$currency ${formatAmount(value)}',
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
       ],
@@ -420,16 +423,17 @@ class _NetWorthColumn extends StatelessWidget {
   }
 }
 
-class _AccountGroupHeader extends StatelessWidget {
+class _AccountGroupHeader extends ConsumerWidget {
   const _AccountGroupHeader({required this.type, required this.total});
 
   final AccountType type;
   final double total;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isLiabilityGroup = type.isLiability;
     final colors = Theme.of(context).colorScheme;
+    final currency = ref.watch(currencyCodeProvider);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
@@ -442,8 +446,8 @@ class _AccountGroupHeader extends StatelessWidget {
           ),
           Text(
             isLiabilityGroup
-                ? 'Liabilities : ${formatAmount(total.abs())}'
-                : formatAmount(total),
+                ? 'Liabilities : $currency ${formatAmount(total.abs())}'
+                : '$currency ${formatAmount(total)}',
             style: TextStyle(color: colors.onSurfaceVariant),
           ),
         ],
@@ -497,7 +501,7 @@ class _AccountTile extends StatelessWidget {
                     ),
                   ),
                 Text(
-                  '$currency ${formatAmount(account.currentBalance)}',
+                  '$currency ${formatAmount(account.currentBalance.abs())}',
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ],

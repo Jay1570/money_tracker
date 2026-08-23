@@ -5,6 +5,7 @@ import 'package:money_tracker/core/constants/currencies.dart';
 
 import 'package:money_tracker/core/database/tables/enums.dart';
 import 'package:money_tracker/core/providers/repository_providers.dart';
+import 'package:money_tracker/modules/reports/reports_provider.dart' show currencyCodeProvider;
 import 'package:money_tracker/core/widgets/app_dropdown_field.dart';
 import 'package:money_tracker/core/widgets/app_snackbar.dart';
 import 'package:money_tracker/core/widgets/app_text_field.dart';
@@ -24,6 +25,13 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
   String? _nameError;
   String? _amountError;
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with currency setting
+    _currencyCode = ref.read(currencyCodeProvider);
+  }
 
   Future<void> _save() async {
     final trimmedName = _name.trim();

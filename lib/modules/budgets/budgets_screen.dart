@@ -118,7 +118,7 @@ class _BudgetProgressTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currency = ref.watch(currencyCodeProvider).value ?? 'INR';
+    final currency = ref.watch(currencyCodeProvider);
     final colors = Theme.of(context).colorScheme;
     final budget = progress.budget;
     

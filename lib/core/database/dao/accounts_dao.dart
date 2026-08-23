@@ -89,7 +89,7 @@ class AccountsDao extends DatabaseAccessor<AppDatabase>
       throw StateError('Account $rowId not found');
     }
 
-    final adjustedDelta = account.type.isLiability ? -delta : delta;
+    final adjustedDelta = delta;
 
     await (update(accounts)..where((a) => a.id.equals(rowId))).write(
       AccountsCompanion.custom(

@@ -88,7 +88,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
         _type = txJoin.type;
         _amount = txJoin.amount;
         _displayExpression = txJoin.amount.toStringAsFixed(
-            txJoin.amount.truncateToDouble() == txJoin.amount ? 0 : 2);
+          txJoin.amount.truncateToDouble() == txJoin.amount ? 0 : 2,
+        );
         _category = txJoin.category;
         _account = txJoin.account;
         _transferAccount = txJoin.transferAccount;
@@ -294,13 +295,16 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
         }
 
         if (widget.isRecurring) {
-          final recurringRepo = ref.read(recurringTransactionsRepositoryProvider);
+          final recurringRepo = ref.read(
+            recurringTransactionsRepositoryProvider,
+          );
           await recurringRepo.scheduleRecurring(
             templateTransactionId: transactionId,
             frequency: _frequency,
             nextRun: recurringRepo.nextRunAfter(_date, _frequency),
           );
           await recurringRepo.processDueRecurringTransactions();
+          return;
         }
       }
 
@@ -318,7 +322,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Transaction'),
-        content: const Text('Are you sure you want to delete this transaction?'),
+        content: const Text(
+          'Are you sure you want to delete this transaction?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -420,8 +426,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                               if (acc != null) setState(() => _account = acc);
                             },
                             onPickTo: () async {
-                              final acc = await _pickAccount(title: 'Transfer To');
-                              if (acc != null) setState(() => _transferAccount = acc);
+                              final acc = await _pickAccount(
+                                title: 'Transfer To',
+                              );
+                              if (acc != null) {
+                                setState(() => _transferAccount = acc);
+                              }
                             },
                           )
                         : categoriesAsync.when(
@@ -430,8 +440,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                               selectedId: _category?.id,
                               onTap: _saving ? (_) {} : _onCategoryTap,
                             ),
-                            loading: () =>
-                                const Center(child: CircularProgressIndicator()),
+                            loading: () => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
                             error: (e, _) => Center(child: Text(e.toString())),
                           ),
                   ),
@@ -534,56 +545,54 @@ class _CategoryGrid extends StatelessWidget {
       builder: (context, constraints) {
         final itemWidth = 100.0;
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 220),
-          child: Wrap(
-            spacing: crossAxisSpacing,
-            runSpacing: mainAxisSpacing,
-            children: [
-              for (final category in categories)
-                Container(
-                  width: itemWidth,
-                  height: itemWidth,
-                  padding: EdgeInsets.all(4),
-                  child: Builder(
-                    builder: (context) {
-                      final selected = category.id == selectedId;
-                      final colors = Theme.of(context).colorScheme;
-
-                      return InkWell(
-                        onTap: () => onTap(category),
-                        borderRadius: BorderRadius.circular(32),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CircleAvatar(
-                              radius: 30,
-                              backgroundColor: selected
-                                  ? colors.primary
-                                  : colors.surfaceContainer,
-                              child: Icon(
-                                categoryIconFromKey(category.icon),
-                                color: selected
-                                    ? colors.surface
-                                    : colors.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              category.name,
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                          ],
+        return GridView.builder(
+          itemCount: categories.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4, crossAxisSpacing: crossAxisSpacing, mainAxisSpacing: mainAxisSpacing,),
+          
+          itemBuilder: (c, index) {
+            final category = categories[index];
+            return Container(
+              width: itemWidth,
+              height: itemWidth,
+              padding: EdgeInsets.all(4),
+              child: Builder(
+                builder: (context) {
+                  final selected = category.id == selectedId;
+                  final colors = Theme.of(context).colorScheme;
+        
+                  return InkWell(
+                    onTap: () => onTap(category),
+                    borderRadius: BorderRadius.circular(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundColor: selected
+                              ? colors.primary
+                              : colors.surfaceContainer,
+                          child: Icon(
+                            categoryIconFromKey(category.icon),
+                            color: selected
+                                ? colors.surface
+                                : colors.onSurfaceVariant,
+                          ),
                         ),
-                      );
-                    },
-                  ),
-                ),
-            ],
-          ),
+                        const SizedBox(height: 8),
+                        Text(
+                          category.name,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            );
+          },
         );
       },
     );
@@ -668,11 +677,17 @@ class _AmountEntryPanelState extends State<_AmountEntryPanel> {
                     ? _TransferAccountsRow(
                         from: widget.account,
                         to: widget.transferAccount,
-                        onTapFrom: widget.saving ? null : widget.onChangeSourceAccount,
-                        onTapTo: widget.saving ? null : widget.onChangeTransferAccount,
+                        onTapFrom: widget.saving
+                            ? null
+                            : widget.onChangeSourceAccount,
+                        onTapTo: widget.saving
+                            ? null
+                            : widget.onChangeTransferAccount,
                       )
                     : InkWell(
-                        onTap: widget.saving ? null : widget.onChangeSourceAccount,
+                        onTap: widget.saving
+                            ? null
+                            : widget.onChangeSourceAccount,
                         child: _SingleAccountRow(account: widget.account),
                       ),
               ),
@@ -957,25 +972,33 @@ class _TransferAccountPickerGrid extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Expanded(child: _AccountPickerCard(
-              account: fromAccount,
-              label: 'From',
-              onTap: onPickFrom,
-            )),
+            Expanded(
+              child: _AccountPickerCard(
+                account: fromAccount,
+                label: 'From',
+                onTap: onPickFrom,
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.arrow_forward, color: colors.onSurfaceVariant, size: 28),
+                  Icon(
+                    Icons.arrow_forward,
+                    color: colors.onSurfaceVariant,
+                    size: 28,
+                  ),
                 ],
               ),
             ),
-            Expanded(child: _AccountPickerCard(
-              account: toAccount,
-              label: 'To',
-              onTap: onPickTo,
-            )),
+            Expanded(
+              child: _AccountPickerCard(
+                account: toAccount,
+                label: 'To',
+                onTap: onPickTo,
+              ),
+            ),
           ],
         ),
       ),
@@ -1005,7 +1028,9 @@ class _AccountPickerCard extends StatelessWidget {
         aspectRatio: 1,
         child: Container(
           decoration: BoxDecoration(
-            color: hasAccount ? colors.primary.withAlpha(30) : colors.surfaceContainer,
+            color: hasAccount
+                ? colors.primary.withAlpha(30)
+                : colors.surfaceContainer,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: hasAccount ? colors.primary : colors.outlineVariant,
@@ -1037,7 +1062,10 @@ class _AccountPickerCard extends StatelessWidget {
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ] else ...[
@@ -1045,7 +1073,10 @@ class _AccountPickerCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   label,
-                  style: TextStyle(color: colors.onSurfaceVariant, fontSize: 13),
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ],

@@ -73,6 +73,11 @@ class SettingsScreen extends ConsumerWidget {
                     },
                   ),
                   _NavTile(
+                    icon: Icons.category_outlined,
+                    label: 'Categories',
+                    onTap: () => context.push('/categories'),
+                  ),
+                  _NavTile(
                     icon: Icons.event_repeat,
                     label: 'Recurring Transactions',
                     onTap: () => context.push('/recurring-transactions'),
@@ -164,13 +169,12 @@ void _dismissLoadingDialog(BuildContext context) {
 
 Future<void> _exportDatabase(BuildContext context, WidgetRef ref) async {
   try {
-    String? selectedDirectory = await FilePicker.getDirectoryPath(
-      dialogTitle: "Select where to save export",
-    );
+    final file = await ref.read(databaseBackupServiceProvider).exportToFile();
 
-    final file = await ref
-        .read(databaseBackupServiceProvider)
-        .exportToFile(dirPath: selectedDirectory);
+    await FilePicker.saveFile(
+      fileName: file.uri.pathSegments.last,
+      bytes: file.readAsBytesSync(),
+    );
     await SharePlus.instance.share(
       ShareParams(files: [XFile(file.path)], text: 'Money Tracker backup'),
     );

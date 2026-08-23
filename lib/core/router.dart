@@ -2,6 +2,7 @@ import "package:material_ui/material_ui.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:go_router/go_router.dart";
 import "package:money_tracker/main.dart";
+import "package:money_tracker/core/database/tables/enums.dart";
 import "package:money_tracker/modules/accounts/add_account_screen.dart";
 import "package:money_tracker/modules/accounts/edit_account_screen.dart";
 import "package:money_tracker/modules/accounts/view_account_screen.dart";
@@ -13,6 +14,8 @@ import "package:money_tracker/modules/transactions/recurring_transaction_screen.
 
 import "package:money_tracker/modules/budgets/budgets_screen.dart";
 import "package:money_tracker/modules/budgets/add_budget_screen.dart";
+import "package:money_tracker/modules/categories/categories_screen.dart";
+import "package:money_tracker/modules/categories/add_category_screen.dart";
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -123,6 +126,35 @@ final routerProvider = Provider<GoRouter>((ref) {
           return buildSlidePage(
             state: state,
             child: AddBudgetScreen(budgetId: id),
+          );
+        },
+      ),
+
+      GoRoute(
+        path: "/categories",
+        pageBuilder: (context, state) => buildSlidePage(
+          state: state,
+          child: const CategoriesScreen(),
+        ),
+      ),
+      GoRoute(
+        path: "/categories/add",
+        pageBuilder: (context, state) {
+          final typeString = state.uri.queryParameters['type'];
+          final type = typeString == 'income' ? CategoryType.income : CategoryType.expense;
+          return buildSlidePage(
+            state: state,
+            child: AddCategoryScreen(initialType: type),
+          );
+        },
+      ),
+      GoRoute(
+        path: "/categories/edit/:id",
+        pageBuilder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          return buildSlidePage(
+            state: state,
+            child: AddCategoryScreen(categoryId: id),
           );
         },
       ),

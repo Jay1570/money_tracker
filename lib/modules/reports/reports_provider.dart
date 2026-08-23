@@ -6,6 +6,8 @@ import 'package:money_tracker/core/database/tables/enums.dart';
 import 'package:money_tracker/core/providers/repository_providers.dart';
 import 'package:money_tracker/core/repositories/budgets_repositories.dart';
 
+import 'package:money_tracker/modules/settings/settings_provider.dart';
+
 enum ReportsTab { analytics, accounts }
 
 final reportsTabProvider = StateProvider<ReportsTab>(
@@ -149,7 +151,7 @@ final groupedAccountsProvider = Provider<Map<AccountType, List<Account>>>((
 
 /// The app's currently configured currency code (e.g. "INR"), defaulting
 /// to "INR" until settings finish loading.
-final currencyCodeProvider = FutureProvider<String>((ref) async {
-  final settings = await ref.watch(settingsRepositoryProvider).getSettings();
-  return settings.currency;
+final currencyCodeProvider = Provider<String>((ref) {
+  final settingsAsync = ref.watch(settingsStreamProvider);
+  return settingsAsync.value?.currency ?? 'INR';
 });

@@ -213,7 +213,7 @@ class ViewAccountScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final accountAsync = ref.watch(accountDetailProvider(accountId));
     final transactionsAsync = ref.watch(accountTransactionsProvider(accountId));
-    final currency = ref.watch(currencyCodeProvider).value ?? 'INR';
+    final currency = ref.watch(currencyCodeProvider);
     final colors = Theme.of(context).colorScheme;
 
     return accountAsync.when(

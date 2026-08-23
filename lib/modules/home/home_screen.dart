@@ -6,6 +6,8 @@ import 'package:money_tracker/core/models/transaction.dart';
 import 'package:money_tracker/core/utils/time_utils.dart';
 import 'package:money_tracker/core/widgets/app_bar.dart';
 import 'package:money_tracker/core/widgets/app_scaffold.dart';
+import 'package:money_tracker/core/utils/currency_format.dart';
+import 'package:money_tracker/modules/reports/reports_provider.dart' show currencyCodeProvider;
 import 'package:money_tracker/modules/home/home_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -125,16 +127,17 @@ Map<DateTime, List<TransactionWithJoin>> _groupByDay(
   return map;
 }
 
-class _DayHeader extends StatelessWidget {
+class _DayHeader extends ConsumerWidget {
   const _DayHeader({required this.day, required this.net});
 
   final DateTime day;
   final double net;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isIncome = net >= 0;
     final colors = Theme.of(context).colorScheme;
+    final currency = ref.watch(currencyCodeProvider);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
@@ -146,7 +149,7 @@ class _DayHeader extends StatelessWidget {
             style: TextStyle(color: colors.onSurfaceVariant),
           ),
           Text(
-            '${isIncome ? "Income" : "Expenses"}: ${net.abs().toStringAsFixed(0)}',
+            '${isIncome ? "Income" : "Expenses"}: $currency ${formatAmount(net.abs())}',
             style: TextStyle(color: colors.onSurfaceVariant),
           ),
         ],
@@ -155,14 +158,15 @@ class _DayHeader extends StatelessWidget {
   }
 }
 
-class _TransactionTile extends StatelessWidget {
+class _TransactionTile extends ConsumerWidget {
   const _TransactionTile({required this.tx});
 
   final TransactionWithJoin tx;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
+    final currency = ref.watch(currencyCodeProvider);
     final isTransfer = tx.type == TransactionType.transfer;
     final isExpense = tx.type == TransactionType.expense;
     final background = isTransfer
@@ -177,6 +181,12 @@ class _TransactionTile extends StatelessWidget {
         ? Icons.arrow_upward
         : Icons.arrow_downward;
 
+    final prefix = isTransfer
+        ? ""
+        : isExpense
+        ? "-"
+        : "+";
+
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: background,
@@ -188,7 +198,7 @@ class _TransactionTile extends StatelessWidget {
             : tx.category?.name ?? tx.account.name,
       ),
       trailing: Text(
-        tx.amount.toStringAsFixed(2),
+        '$prefix$currency ${formatAmount(tx.amount)}',
         style: const TextStyle(
           fontWeight: FontWeight.bold,
         ),
@@ -298,7 +308,7 @@ class _MonthPill extends StatelessWidget {
   }
 }
 
-class _SummaryItem extends StatelessWidget {
+class _SummaryItem extends ConsumerWidget {
   const _SummaryItem({
     required this.title,
     required this.value,
@@ -308,8 +318,9 @@ class _SummaryItem extends StatelessWidget {
   final double value;
 
   @override
-  Widget build(BuildContext context) {
-        final colors = Theme.of(context).colorScheme;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = Theme.of(context).colorScheme;
+    final currency = ref.watch(currencyCodeProvider);
     return Column(
       children: [
         Text(
@@ -320,7 +331,7 @@ class _SummaryItem extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          value.toStringAsFixed(2),
+          '$currency ${formatAmount(value)}',
           style: const TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,

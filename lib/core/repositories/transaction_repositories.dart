@@ -194,21 +194,19 @@ class TransactionsRepository {
 
       var balance = account.initialBalance;
 
-      final multiplier = account.type.isLiability ? -1 : 1;
-
       for (final tx in relatedTransactions) {
         switch (tx.type) {
           case TransactionType.income:
-            if (tx.accountId == accountId) balance += multiplier * tx.amount;
+            if (tx.accountId == accountId) balance += tx.amount;
             break;
 
           case TransactionType.expense:
-            if (tx.accountId == accountId) balance -= multiplier * tx.amount;
+            if (tx.accountId == accountId) balance -= tx.amount;
             break;
 
           case TransactionType.transfer:
-            if (tx.accountId == accountId) balance -= multiplier * tx.amount;
-            if (tx.transferAccountId == accountId) balance += multiplier * tx.amount;
+            if (tx.accountId == accountId) balance -= tx.amount;
+            if (tx.transferAccountId == accountId) balance += tx.amount;
             break;
         }
       }
