@@ -210,7 +210,7 @@ class _RecurringTile extends ConsumerWidget {
               IconButton(
                 icon: const Icon(Icons.edit),
                 onPressed: () => context.push(
-                  '/transaction/edit/${recurring.id}',
+                  '/recurring-transactions/edit/${recurring.id}',
                 ),
               ),
             ],

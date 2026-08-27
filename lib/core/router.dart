@@ -99,6 +99,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: "/recurring-transactions/edit/:id",
+        pageBuilder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          return buildSlidePage(
+            state: state,
+            child: AddTransactionScreen(
+              transactionId: id,
+              isRecurring: true,
+            ),
+          );
+        },
+      ),
+      GoRoute(
         path: "/settings",
         pageBuilder: (context, state) => buildSlidePage(
           state: state,
@@ -141,7 +154,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: "/categories/add",
         pageBuilder: (context, state) {
           final typeString = state.uri.queryParameters['type'];
-          final type = typeString == 'income' ? CategoryType.income : CategoryType.expense;
+          final type = typeString == 'income'
+              ? CategoryType.income
+              : CategoryType.expense;
           return buildSlidePage(
             state: state,
             child: AddCategoryScreen(initialType: type),
