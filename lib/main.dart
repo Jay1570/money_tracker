@@ -38,7 +38,7 @@ class App extends ConsumerWidget {
     final settings = ref.watch(settingsStreamProvider).value;
     final isDarkMode = settings?.darkMode ?? true;
 
-    const themeColor = Color(0xFFFFD54F);
+    final themeColor = isDarkMode ? Colors.yellow : Colors.brown;
 
     return MaterialApp.router(
       theme: AppTheme.light(themeColor, textTheme),

@@ -69,12 +69,53 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     super.initState();
     if (widget.isEditing) {
       _isLoading = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _loadTransaction());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        widget.isRecurring ? _loadRecurringTemplate() : _loadTransaction();
+      });
+    }
+  }
+
+  Future<void> _loadRecurringTemplate() async {
+    try {
+      if (!widget.isEditing) return;
+      final recurring = await ref
+          .read(recurringTransactionsRepositoryProvider)
+          .getRecurringTransactionById(widget.transactionId!);
+      if (!mounted) return;
+      if (recurring == null) {
+        AppSnackbar.showError(
+          message: 'Recurring schedule not found',
+          title: 'Error',
+        );
+        context.pop();
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _type = recurring.type;
+        _amount = recurring.amount;
+        _displayExpression = recurring.amount.toStringAsFixed(
+          recurring.amount.truncateToDouble() == recurring.amount ? 0 : 2,
+        );
+        _category = recurring.category;
+        _account = recurring.account;
+        _transferAccount = recurring.transferAccount;
+        _note = recurring.note ?? '';
+        _frequency = recurring.frequency;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        AppSnackbar.showError(message: e.toString(), title: 'Error');
+        context.pop();
+      }
     }
   }
 
   Future<void> _loadTransaction() async {
     try {
+      if (!widget.isEditing) return;
       final txJoin = await ref
           .read(transactionsRepositoryProvider)
           .getTransactionById(widget.transactionId!);
@@ -192,7 +233,78 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     }
   }
 
+  Future<void> _saveRecurring() async {
+    final category = _category;
+    final account = _account;
+    final amount = _amount;
+    final note = _note.trim().isEmpty ? null : _note.trim();
+
+    if (account == null || amount <= 0) {
+      AppSnackbar.showError(
+        message: 'Pick an account and enter an amount',
+        title: "Error",
+      );
+      return;
+    }
+    if (_type != TransactionType.transfer && category == null) {
+      AppSnackbar.showError(message: 'Pick a category', title: "Error");
+      return;
+    }
+    if (_type == TransactionType.transfer && _transferAccount == null) {
+      AppSnackbar.showError(
+        message: 'Pick a destination account',
+        title: "Error",
+      );
+      return;
+    }
+
+    setState(() => _saving = true);
+    final recurringRepo = ref.read(recurringTransactionsRepositoryProvider);
+    final transferAccountId = _type == TransactionType.transfer
+        ? _transferAccount!.id
+        : null;
+
+    try {
+      if (widget.isEditing) {
+        await recurringRepo.updateRecurringSchedule(
+          id: widget.transactionId!,
+          type: _type,
+          accountId: account.id,
+          categoryId: category?.id,
+          amount: amount,
+          transferAccountId: transferAccountId,
+          note: note,
+          frequency: _frequency,
+        );
+      } else {
+        await recurringRepo.scheduleRecurring(
+          type: _type,
+          accountId: account.id,
+          categoryId: category?.id,
+          amount: amount,
+          startDate: _date,
+          transferAccountId: transferAccountId,
+          note: note,
+          frequency: _frequency,
+        );
+      }
+
+      await recurringRepo.processDueRecurringTransactions();
+      if (mounted) context.pop();
+    } catch (e) {
+      if (mounted) {
+        AppSnackbar.showError(message: e.toString(), title: "Error");
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   Future<void> _save() async {
+    if (widget.isRecurring) {
+      _saveRecurring();
+      return;
+    }
     final category = _category;
     final account = _account;
     final amount = _amount;
@@ -261,11 +373,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
             break;
         }
       } else {
-        // --- ADD new transaction ---
-        late final int transactionId;
         switch (_type) {
           case TransactionType.expense:
-            transactionId = await repo.addExpense(
+            await repo.addExpense(
               amount: amount,
               accountId: account.id,
               categoryId: category!.id,
@@ -274,7 +384,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
             );
             break;
           case TransactionType.income:
-            transactionId = await repo.addIncome(
+            await repo.addIncome(
               amount: amount,
               accountId: account.id,
               categoryId: category!.id,
@@ -283,7 +393,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
             );
             break;
           case TransactionType.transfer:
-            transactionId = await repo.addTransfer(
+            await repo.addTransfer(
               amount: amount,
               accountId: account.id,
               categoryId: category?.id,
@@ -293,27 +403,15 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
             );
             break;
         }
-
-        if (widget.isRecurring) {
-          final recurringRepo = ref.read(
-            recurringTransactionsRepositoryProvider,
-          );
-          await recurringRepo.scheduleRecurring(
-            templateTransactionId: transactionId,
-            frequency: _frequency,
-            nextRun: recurringRepo.nextRunAfter(_date, _frequency),
-          );
-          await recurringRepo.processDueRecurringTransactions();
-          return;
-        }
       }
 
       if (mounted) context.pop();
     } catch (e) {
       if (mounted) {
-        setState(() => _saving = false);
         AppSnackbar.showError(message: e.toString(), title: "Error");
       }
+    } finally {
+      setState(() => _saving = false);
     }
   }
 
@@ -547,8 +645,12 @@ class _CategoryGrid extends StatelessWidget {
 
         return GridView.builder(
           itemCount: categories.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4, crossAxisSpacing: crossAxisSpacing, mainAxisSpacing: mainAxisSpacing,),
-          
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+            crossAxisSpacing: crossAxisSpacing,
+            mainAxisSpacing: mainAxisSpacing,
+          ),
+
           itemBuilder: (c, index) {
             final category = categories[index];
             return Container(
@@ -559,7 +661,7 @@ class _CategoryGrid extends StatelessWidget {
                 builder: (context) {
                   final selected = category.id == selectedId;
                   final colors = Theme.of(context).colorScheme;
-        
+
                   return InkWell(
                     onTap: () => onTap(category),
                     borderRadius: BorderRadius.circular(32),

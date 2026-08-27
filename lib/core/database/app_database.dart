@@ -19,6 +19,7 @@ import 'package:money_tracker/core/database/tables/tags.dart';
 import 'package:money_tracker/core/database/tables/transaction_tags.dart';
 import 'package:money_tracker/core/database/tables/transactions.dart';
 import 'package:money_tracker/core/database/tables/recurring_transaction.dart';
+import 'package:money_tracker/core/database/app_database.steps.dart';
 
 part 'app_database.g.dart';
 
@@ -45,10 +46,10 @@ part 'app_database.g.dart';
   ],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(openConnection());
+  AppDatabase([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -60,9 +61,11 @@ class AppDatabase extends _$AppDatabase {
       await customStatement('PRAGMA foreign_keys = ON;');
       await customStatement('PRAGMA journal_mode = WAL;');
     },
-    onUpgrade: (m, from, to) async {
-      // Future schema migrations.
-    },
-
+    onUpgrade: stepByStep(
+      from1To2: (m, schema) async {
+        await m.deleteTable(schema.recurringTransactions.actualTableName);
+        await m.createTable(schema.recurringTransactions);
+      },
+    ),
   );
 }

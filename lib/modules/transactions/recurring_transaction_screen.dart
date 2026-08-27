@@ -89,7 +89,7 @@ class _RecurringTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detailsAsync = ref.watch(
-      recurringTransactionDetailsProvider(recurring.transactionId),
+      recurringTransactionDetailsProvider(recurring.id),
     );
     final currency = ref.watch(currencyCodeProvider);
     final colors = Theme.of(context).colorScheme;
@@ -210,7 +210,7 @@ class _RecurringTile extends ConsumerWidget {
               IconButton(
                 icon: const Icon(Icons.edit),
                 onPressed: () => context.push(
-                  '/transaction/edit/${recurring.transactionId}',
+                  '/transaction/edit/${recurring.id}',
                 ),
               ),
             ],

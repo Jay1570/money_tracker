@@ -190,8 +190,12 @@ class ViewAccountScreen extends ConsumerWidget {
         for (final tx in txs) {
           await ref
               .read(transactionsRepositoryProvider)
-              .deleteTransaction(tx.id, cancelRecurringSeries: true);
+              .deleteTransaction(tx.id);
         }
+
+        await db.recurringTransactionsDao.deleteRecurringTransactionByAccountId(
+          account.id,
+        );
 
         // Now delete the account
         await ref.read(accountsRepositoryProvider).deleteAccount(account.id);

@@ -1,0 +1,8 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          databases:
+            # Required: A name for the database and its path
+            money_manager: lib/core/database/app_database.dart

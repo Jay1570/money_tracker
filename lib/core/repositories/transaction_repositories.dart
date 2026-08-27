@@ -126,37 +126,15 @@ class TransactionsRepository {
   /// If this transaction is the template for a recurring series, deleting
   /// it would silently cancel all future occurrences — so that's refused
   /// unless [cancelRecurringSeries] is explicitly set to `true`.
-  Future<void> deleteTransaction(
-    int transactionId, {
-    bool cancelRecurringSeries = false,
-  }) async {
+  Future<void> deleteTransaction(int transactionId) async {
     await _db.transaction(() async {
       final existing = await _db.transactionsDao.getTransactionById(
         transactionId,
       );
       if (existing == null) return;
 
-      final recurring = await _db.recurringTransactionsDao
-          .getRecurringTransactionByTransactionId(transactionId);
-
-      if (recurring != null && !cancelRecurringSeries) {
-        throw StateError(
-          'Transaction $transactionId is the template for a recurring '
-          'series (schedule ${recurring.id}). Deleting it would cancel all '
-          'future occurrences. Pass cancelRecurringSeries: true to confirm.',
-        );
-      }
-
       await _reverseBalanceEffect(existing);
-
       await _db.transactionTagsDao.clearTagsForTransaction(transactionId);
-
-      if (recurring != null) {
-        await _db.recurringTransactionsDao.deleteRecurringTransaction(
-          recurring.id,
-        );
-      }
-
       await _db.transactionsDao.deleteTransaction(transactionId);
     });
   }
@@ -174,8 +152,7 @@ class TransactionsRepository {
   }
 
   /// Fetches a single transaction by id, joined with its account(s) and
-  /// category — a thin pass-through used to resolve a recurring
-  /// schedule's template transaction for display.
+  /// category
   Future<TransactionWithJoin?> getTransactionById(int id) {
     return _db.transactionsDao.getTransactionById(id);
   }
@@ -277,7 +254,7 @@ class TransactionsRepository {
     if (amount <= 0) {
       throw ArgumentError.value(amount, 'amount');
     }
-    
+
     _assertTransferAccount(type, accountId, transferAccountId);
 
     await _db.transaction(() async {
@@ -346,7 +323,11 @@ class TransactionsRepository {
     );
   }
 
-  void _assertTransferAccount(TransactionType type, int accountId, int? transferAccountId) {
+  void _assertTransferAccount(
+    TransactionType type,
+    int accountId,
+    int? transferAccountId,
+  ) {
     if (type == TransactionType.transfer && transferAccountId == null) {
       throw ArgumentError(
         'transferAccountId is required for transfer transactions',

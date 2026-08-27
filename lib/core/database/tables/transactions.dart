@@ -10,12 +10,13 @@ class Transactions extends Table {
 
   IntColumn get type => intEnum<TransactionType>()();
 
-  @ReferenceName("account")
+  @ReferenceName("sourceAccount")
   IntColumn get accountId => integer().references(Accounts, #id)();
 
   IntColumn get categoryId =>
       integer().nullable().references(Categories, #id)();
 
+  @ReferenceName("transaferAccount")
   IntColumn get transferAccountId =>
       integer().nullable().references(Accounts, #id)();
 

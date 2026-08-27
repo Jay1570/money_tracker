@@ -2415,19 +2415,76 @@ class $RecurringTransactionsTable extends RecurringTransactions
       'PRIMARY KEY AUTOINCREMENT',
     ),
   );
-  static const VerificationMeta _transactionIdMeta = const VerificationMeta(
-    'transactionId',
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<double> amount = GeneratedColumn<double>(
+    'amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
   );
   @override
-  late final GeneratedColumn<int> transactionId = GeneratedColumn<int>(
-    'transaction_id',
+  late final GeneratedColumnWithTypeConverter<TransactionType, int> type =
+      GeneratedColumn<int>(
+        'type',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: true,
+      ).withConverter<TransactionType>(
+        $RecurringTransactionsTable.$convertertype,
+      );
+  static const VerificationMeta _accountIdMeta = const VerificationMeta(
+    'accountId',
+  );
+  @override
+  late final GeneratedColumn<int> accountId = GeneratedColumn<int>(
+    'account_id',
     aliasedName,
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES transactions (id)',
+      'REFERENCES accounts (id)',
     ),
+  );
+  static const VerificationMeta _categoryIdMeta = const VerificationMeta(
+    'categoryId',
+  );
+  @override
+  late final GeneratedColumn<int> categoryId = GeneratedColumn<int>(
+    'category_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES categories (id)',
+    ),
+  );
+  static const VerificationMeta _transferAccountIdMeta = const VerificationMeta(
+    'transferAccountId',
+  );
+  @override
+  late final GeneratedColumn<int> transferAccountId = GeneratedColumn<int>(
+    'transfer_account_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES accounts (id)',
+    ),
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   @override
   late final GeneratedColumnWithTypeConverter<RecurringFrequency, int>
@@ -2470,7 +2527,12 @@ class $RecurringTransactionsTable extends RecurringTransactions
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    transactionId,
+    amount,
+    type,
+    accountId,
+    categoryId,
+    transferAccountId,
+    note,
     frequency,
     nextRun,
     enabled,
@@ -2490,16 +2552,42 @@ class $RecurringTransactionsTable extends RecurringTransactions
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
-    if (data.containsKey('transaction_id')) {
+    if (data.containsKey('amount')) {
       context.handle(
-        _transactionIdMeta,
-        transactionId.isAcceptableOrUnknown(
-          data['transaction_id']!,
-          _transactionIdMeta,
-        ),
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
       );
     } else if (isInserting) {
-      context.missing(_transactionIdMeta);
+      context.missing(_amountMeta);
+    }
+    if (data.containsKey('account_id')) {
+      context.handle(
+        _accountIdMeta,
+        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_accountIdMeta);
+    }
+    if (data.containsKey('category_id')) {
+      context.handle(
+        _categoryIdMeta,
+        categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
+      );
+    }
+    if (data.containsKey('transfer_account_id')) {
+      context.handle(
+        _transferAccountIdMeta,
+        transferAccountId.isAcceptableOrUnknown(
+          data['transfer_account_id']!,
+          _transferAccountIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
     }
     if (data.containsKey('next_run')) {
       context.handle(
@@ -2528,10 +2616,32 @@ class $RecurringTransactionsTable extends RecurringTransactions
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
-      transactionId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}transaction_id'],
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}amount'],
       )!,
+      type: $RecurringTransactionsTable.$convertertype.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}type'],
+        )!,
+      ),
+      accountId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}account_id'],
+      )!,
+      categoryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}category_id'],
+      ),
+      transferAccountId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}transfer_account_id'],
+      ),
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
       frequency: $RecurringTransactionsTable.$converterfrequency.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.int,
@@ -2554,6 +2664,8 @@ class $RecurringTransactionsTable extends RecurringTransactions
     return $RecurringTransactionsTable(attachedDatabase, alias);
   }
 
+  static JsonTypeConverter2<TransactionType, int, int> $convertertype =
+      const EnumIndexConverter<TransactionType>(TransactionType.values);
   static JsonTypeConverter2<RecurringFrequency, int, int> $converterfrequency =
       const EnumIndexConverter<RecurringFrequency>(RecurringFrequency.values);
 }
@@ -2561,13 +2673,23 @@ class $RecurringTransactionsTable extends RecurringTransactions
 class RecurringTransaction extends DataClass
     implements Insertable<RecurringTransaction> {
   final int id;
-  final int transactionId;
+  final double amount;
+  final TransactionType type;
+  final int accountId;
+  final int? categoryId;
+  final int? transferAccountId;
+  final String? note;
   final RecurringFrequency frequency;
   final DateTime nextRun;
   final bool enabled;
   const RecurringTransaction({
     required this.id,
-    required this.transactionId,
+    required this.amount,
+    required this.type,
+    required this.accountId,
+    this.categoryId,
+    this.transferAccountId,
+    this.note,
     required this.frequency,
     required this.nextRun,
     required this.enabled,
@@ -2576,7 +2698,22 @@ class RecurringTransaction extends DataClass
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    map['transaction_id'] = Variable<int>(transactionId);
+    map['amount'] = Variable<double>(amount);
+    {
+      map['type'] = Variable<int>(
+        $RecurringTransactionsTable.$convertertype.toSql(type),
+      );
+    }
+    map['account_id'] = Variable<int>(accountId);
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<int>(categoryId);
+    }
+    if (!nullToAbsent || transferAccountId != null) {
+      map['transfer_account_id'] = Variable<int>(transferAccountId);
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
     {
       map['frequency'] = Variable<int>(
         $RecurringTransactionsTable.$converterfrequency.toSql(frequency),
@@ -2590,7 +2727,16 @@ class RecurringTransaction extends DataClass
   RecurringTransactionsCompanion toCompanion(bool nullToAbsent) {
     return RecurringTransactionsCompanion(
       id: Value(id),
-      transactionId: Value(transactionId),
+      amount: Value(amount),
+      type: Value(type),
+      accountId: Value(accountId),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
+      transferAccountId: transferAccountId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(transferAccountId),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
       frequency: Value(frequency),
       nextRun: Value(nextRun),
       enabled: Value(enabled),
@@ -2604,7 +2750,14 @@ class RecurringTransaction extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return RecurringTransaction(
       id: serializer.fromJson<int>(json['id']),
-      transactionId: serializer.fromJson<int>(json['transactionId']),
+      amount: serializer.fromJson<double>(json['amount']),
+      type: $RecurringTransactionsTable.$convertertype.fromJson(
+        serializer.fromJson<int>(json['type']),
+      ),
+      accountId: serializer.fromJson<int>(json['accountId']),
+      categoryId: serializer.fromJson<int?>(json['categoryId']),
+      transferAccountId: serializer.fromJson<int?>(json['transferAccountId']),
+      note: serializer.fromJson<String?>(json['note']),
       frequency: $RecurringTransactionsTable.$converterfrequency.fromJson(
         serializer.fromJson<int>(json['frequency']),
       ),
@@ -2617,7 +2770,14 @@ class RecurringTransaction extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'transactionId': serializer.toJson<int>(transactionId),
+      'amount': serializer.toJson<double>(amount),
+      'type': serializer.toJson<int>(
+        $RecurringTransactionsTable.$convertertype.toJson(type),
+      ),
+      'accountId': serializer.toJson<int>(accountId),
+      'categoryId': serializer.toJson<int?>(categoryId),
+      'transferAccountId': serializer.toJson<int?>(transferAccountId),
+      'note': serializer.toJson<String?>(note),
       'frequency': serializer.toJson<int>(
         $RecurringTransactionsTable.$converterfrequency.toJson(frequency),
       ),
@@ -2628,13 +2788,25 @@ class RecurringTransaction extends DataClass
 
   RecurringTransaction copyWith({
     int? id,
-    int? transactionId,
+    double? amount,
+    TransactionType? type,
+    int? accountId,
+    Value<int?> categoryId = const Value.absent(),
+    Value<int?> transferAccountId = const Value.absent(),
+    Value<String?> note = const Value.absent(),
     RecurringFrequency? frequency,
     DateTime? nextRun,
     bool? enabled,
   }) => RecurringTransaction(
     id: id ?? this.id,
-    transactionId: transactionId ?? this.transactionId,
+    amount: amount ?? this.amount,
+    type: type ?? this.type,
+    accountId: accountId ?? this.accountId,
+    categoryId: categoryId.present ? categoryId.value : this.categoryId,
+    transferAccountId: transferAccountId.present
+        ? transferAccountId.value
+        : this.transferAccountId,
+    note: note.present ? note.value : this.note,
     frequency: frequency ?? this.frequency,
     nextRun: nextRun ?? this.nextRun,
     enabled: enabled ?? this.enabled,
@@ -2642,9 +2814,16 @@ class RecurringTransaction extends DataClass
   RecurringTransaction copyWithCompanion(RecurringTransactionsCompanion data) {
     return RecurringTransaction(
       id: data.id.present ? data.id.value : this.id,
-      transactionId: data.transactionId.present
-          ? data.transactionId.value
-          : this.transactionId,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      type: data.type.present ? data.type.value : this.type,
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
+      categoryId: data.categoryId.present
+          ? data.categoryId.value
+          : this.categoryId,
+      transferAccountId: data.transferAccountId.present
+          ? data.transferAccountId.value
+          : this.transferAccountId,
+      note: data.note.present ? data.note.value : this.note,
       frequency: data.frequency.present ? data.frequency.value : this.frequency,
       nextRun: data.nextRun.present ? data.nextRun.value : this.nextRun,
       enabled: data.enabled.present ? data.enabled.value : this.enabled,
@@ -2655,7 +2834,12 @@ class RecurringTransaction extends DataClass
   String toString() {
     return (StringBuffer('RecurringTransaction(')
           ..write('id: $id, ')
-          ..write('transactionId: $transactionId, ')
+          ..write('amount: $amount, ')
+          ..write('type: $type, ')
+          ..write('accountId: $accountId, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('transferAccountId: $transferAccountId, ')
+          ..write('note: $note, ')
           ..write('frequency: $frequency, ')
           ..write('nextRun: $nextRun, ')
           ..write('enabled: $enabled')
@@ -2664,14 +2848,29 @@ class RecurringTransaction extends DataClass
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, transactionId, frequency, nextRun, enabled);
+  int get hashCode => Object.hash(
+    id,
+    amount,
+    type,
+    accountId,
+    categoryId,
+    transferAccountId,
+    note,
+    frequency,
+    nextRun,
+    enabled,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is RecurringTransaction &&
           other.id == this.id &&
-          other.transactionId == this.transactionId &&
+          other.amount == this.amount &&
+          other.type == this.type &&
+          other.accountId == this.accountId &&
+          other.categoryId == this.categoryId &&
+          other.transferAccountId == this.transferAccountId &&
+          other.note == this.note &&
           other.frequency == this.frequency &&
           other.nextRun == this.nextRun &&
           other.enabled == this.enabled);
@@ -2680,36 +2879,63 @@ class RecurringTransaction extends DataClass
 class RecurringTransactionsCompanion
     extends UpdateCompanion<RecurringTransaction> {
   final Value<int> id;
-  final Value<int> transactionId;
+  final Value<double> amount;
+  final Value<TransactionType> type;
+  final Value<int> accountId;
+  final Value<int?> categoryId;
+  final Value<int?> transferAccountId;
+  final Value<String?> note;
   final Value<RecurringFrequency> frequency;
   final Value<DateTime> nextRun;
   final Value<bool> enabled;
   const RecurringTransactionsCompanion({
     this.id = const Value.absent(),
-    this.transactionId = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.type = const Value.absent(),
+    this.accountId = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.transferAccountId = const Value.absent(),
+    this.note = const Value.absent(),
     this.frequency = const Value.absent(),
     this.nextRun = const Value.absent(),
     this.enabled = const Value.absent(),
   });
   RecurringTransactionsCompanion.insert({
     this.id = const Value.absent(),
-    required int transactionId,
+    required double amount,
+    required TransactionType type,
+    required int accountId,
+    this.categoryId = const Value.absent(),
+    this.transferAccountId = const Value.absent(),
+    this.note = const Value.absent(),
     required RecurringFrequency frequency,
     required DateTime nextRun,
     this.enabled = const Value.absent(),
-  }) : transactionId = Value(transactionId),
+  }) : amount = Value(amount),
+       type = Value(type),
+       accountId = Value(accountId),
        frequency = Value(frequency),
        nextRun = Value(nextRun);
   static Insertable<RecurringTransaction> custom({
     Expression<int>? id,
-    Expression<int>? transactionId,
+    Expression<double>? amount,
+    Expression<int>? type,
+    Expression<int>? accountId,
+    Expression<int>? categoryId,
+    Expression<int>? transferAccountId,
+    Expression<String>? note,
     Expression<int>? frequency,
     Expression<DateTime>? nextRun,
     Expression<bool>? enabled,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (transactionId != null) 'transaction_id': transactionId,
+      if (amount != null) 'amount': amount,
+      if (type != null) 'type': type,
+      if (accountId != null) 'account_id': accountId,
+      if (categoryId != null) 'category_id': categoryId,
+      if (transferAccountId != null) 'transfer_account_id': transferAccountId,
+      if (note != null) 'note': note,
       if (frequency != null) 'frequency': frequency,
       if (nextRun != null) 'next_run': nextRun,
       if (enabled != null) 'enabled': enabled,
@@ -2718,14 +2944,24 @@ class RecurringTransactionsCompanion
 
   RecurringTransactionsCompanion copyWith({
     Value<int>? id,
-    Value<int>? transactionId,
+    Value<double>? amount,
+    Value<TransactionType>? type,
+    Value<int>? accountId,
+    Value<int?>? categoryId,
+    Value<int?>? transferAccountId,
+    Value<String?>? note,
     Value<RecurringFrequency>? frequency,
     Value<DateTime>? nextRun,
     Value<bool>? enabled,
   }) {
     return RecurringTransactionsCompanion(
       id: id ?? this.id,
-      transactionId: transactionId ?? this.transactionId,
+      amount: amount ?? this.amount,
+      type: type ?? this.type,
+      accountId: accountId ?? this.accountId,
+      categoryId: categoryId ?? this.categoryId,
+      transferAccountId: transferAccountId ?? this.transferAccountId,
+      note: note ?? this.note,
       frequency: frequency ?? this.frequency,
       nextRun: nextRun ?? this.nextRun,
       enabled: enabled ?? this.enabled,
@@ -2738,8 +2974,25 @@ class RecurringTransactionsCompanion
     if (id.present) {
       map['id'] = Variable<int>(id.value);
     }
-    if (transactionId.present) {
-      map['transaction_id'] = Variable<int>(transactionId.value);
+    if (amount.present) {
+      map['amount'] = Variable<double>(amount.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<int>(
+        $RecurringTransactionsTable.$convertertype.toSql(type.value),
+      );
+    }
+    if (accountId.present) {
+      map['account_id'] = Variable<int>(accountId.value);
+    }
+    if (categoryId.present) {
+      map['category_id'] = Variable<int>(categoryId.value);
+    }
+    if (transferAccountId.present) {
+      map['transfer_account_id'] = Variable<int>(transferAccountId.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
     }
     if (frequency.present) {
       map['frequency'] = Variable<int>(
@@ -2759,7 +3012,12 @@ class RecurringTransactionsCompanion
   String toString() {
     return (StringBuffer('RecurringTransactionsCompanion(')
           ..write('id: $id, ')
-          ..write('transactionId: $transactionId, ')
+          ..write('amount: $amount, ')
+          ..write('type: $type, ')
+          ..write('accountId: $accountId, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('transferAccountId: $transferAccountId, ')
+          ..write('note: $note, ')
           ..write('frequency: $frequency, ')
           ..write('nextRun: $nextRun, ')
           ..write('enabled: $enabled')
@@ -3082,47 +3340,6 @@ typedef $$AccountsTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
     });
 
-final class $$AccountsTableReferences
-    extends BaseReferences<_$AppDatabase, $AccountsTable, Account> {
-  $$AccountsTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static MultiTypedResultKey<$TransactionsTable, List<Transaction>>
-  _accountTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.transactions,
-    aliasName: 'accounts__id__transactions__account_id',
-  );
-
-  $$TransactionsTableProcessedTableManager get account {
-    final manager = $$TransactionsTableTableManager(
-      $_db,
-      $_db.transactions,
-    ).filter((f) => f.accountId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_accountTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$TransactionsTable, List<Transaction>>
-  _transactionsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.transactions,
-    aliasName: 'accounts__id__transactions__transfer_account_id',
-  );
-
-  $$TransactionsTableProcessedTableManager get transactionsRefs {
-    final manager = $$TransactionsTableTableManager(
-      $_db,
-      $_db.transactions,
-    ).filter((f) => f.transferAccountId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_transactionsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
-
 class $$AccountsTableFilterComposer
     extends Composer<_$AppDatabase, $AccountsTable> {
   $$AccountsTableFilterComposer({
@@ -3177,56 +3394,6 @@ class $$AccountsTableFilterComposer
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
-
-  Expression<bool> account(
-    Expression<bool> Function($$TransactionsTableFilterComposer f) f,
-  ) {
-    final $$TransactionsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.transactions,
-      getReferencedColumn: (t) => t.accountId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TransactionsTableFilterComposer(
-            $db: $db,
-            $table: $db.transactions,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> transactionsRefs(
-    Expression<bool> Function($$TransactionsTableFilterComposer f) f,
-  ) {
-    final $$TransactionsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.transactions,
-      getReferencedColumn: (t) => t.transferAccountId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TransactionsTableFilterComposer(
-            $db: $db,
-            $table: $db.transactions,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 }
 
 class $$AccountsTableOrderingComposer
@@ -3323,56 +3490,6 @@ class $$AccountsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  Expression<T> account<T extends Object>(
-    Expression<T> Function($$TransactionsTableAnnotationComposer a) f,
-  ) {
-    final $$TransactionsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.transactions,
-      getReferencedColumn: (t) => t.accountId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TransactionsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.transactions,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> transactionsRefs<T extends Object>(
-    Expression<T> Function($$TransactionsTableAnnotationComposer a) f,
-  ) {
-    final $$TransactionsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.transactions,
-      getReferencedColumn: (t) => t.transferAccountId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TransactionsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.transactions,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 }
 
 class $$AccountsTableTableManager
@@ -3386,9 +3503,9 @@ class $$AccountsTableTableManager
           $$AccountsTableAnnotationComposer,
           $$AccountsTableCreateCompanionBuilder,
           $$AccountsTableUpdateCompanionBuilder,
-          (Account, $$AccountsTableReferences),
+          (Account, BaseReferences<_$AppDatabase, $AccountsTable, Account>),
           Account,
-          PrefetchHooks Function({bool account, bool transactionsRefs})
+          PrefetchHooks Function()
         > {
   $$AccountsTableTableManager(_$AppDatabase db, $AccountsTable table)
     : super(
@@ -3446,63 +3563,9 @@ class $$AccountsTableTableManager
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$AccountsTableReferences(db, table, e),
-                ),
-              )
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({account = false, transactionsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (account) db.transactions,
-                if (transactionsRefs) db.transactions,
-              ],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (account)
-                    await $_getPrefetchedData<
-                      Account,
-                      $AccountsTable,
-                      Transaction
-                    >(
-                      currentTable: table,
-                      referencedTable: $$AccountsTableReferences._accountTable(
-                        db,
-                      ),
-                      managerFromTypedResult: (p0) =>
-                          $$AccountsTableReferences(db, table, p0).account,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.accountId == item.id),
-                      typedResults: items,
-                    ),
-                  if (transactionsRefs)
-                    await $_getPrefetchedData<
-                      Account,
-                      $AccountsTable,
-                      Transaction
-                    >(
-                      currentTable: table,
-                      referencedTable: $$AccountsTableReferences
-                          ._transactionsRefsTable(db),
-                      managerFromTypedResult: (p0) => $$AccountsTableReferences(
-                        db,
-                        table,
-                        p0,
-                      ).transactionsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where(
-                            (e) => e.transferAccountId == item.id,
-                          ),
-                      typedResults: items,
-                    ),
-                ];
-              },
-            );
-          },
+          prefetchHooksCallback: null,
         ),
       );
 }
@@ -3517,9 +3580,9 @@ typedef $$AccountsTableProcessedTableManager =
       $$AccountsTableAnnotationComposer,
       $$AccountsTableCreateCompanionBuilder,
       $$AccountsTableUpdateCompanionBuilder,
-      (Account, $$AccountsTableReferences),
+      (Account, BaseReferences<_$AppDatabase, $AccountsTable, Account>),
       Account,
-      PrefetchHooks Function({bool account, bool transactionsRefs})
+      PrefetchHooks Function()
     >;
 typedef $$CategoriesTableCreateCompanionBuilder =
     CategoriesCompanion Function({
@@ -3595,6 +3658,31 @@ final class $$CategoriesTableReferences
     ).filter((f) => f.categoryId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_budgetsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $RecurringTransactionsTable,
+    List<RecurringTransaction>
+  >
+  _recurringTransactionsRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.recurringTransactions,
+        aliasName: 'categories__id__recurring_transactions__category_id',
+      );
+
+  $$RecurringTransactionsTableProcessedTableManager
+  get recurringTransactionsRefs {
+    final manager = $$RecurringTransactionsTableTableManager(
+      $_db,
+      $_db.recurringTransactions,
+    ).filter((f) => f.categoryId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _recurringTransactionsRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -3711,6 +3799,32 @@ class $$CategoriesTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> recurringTransactionsRefs(
+    Expression<bool> Function($$RecurringTransactionsTableFilterComposer f) f,
+  ) {
+    final $$RecurringTransactionsTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.recurringTransactions,
+          getReferencedColumn: (t) => t.categoryId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$RecurringTransactionsTableFilterComposer(
+                $db: $db,
+                $table: $db.recurringTransactions,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -3877,6 +3991,32 @@ class $$CategoriesTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> recurringTransactionsRefs<T extends Object>(
+    Expression<T> Function($$RecurringTransactionsTableAnnotationComposer a) f,
+  ) {
+    final $$RecurringTransactionsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.recurringTransactions,
+          getReferencedColumn: (t) => t.categoryId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$RecurringTransactionsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.recurringTransactions,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$CategoriesTableTableManager
@@ -3896,6 +4036,7 @@ class $$CategoriesTableTableManager
             bool parentId,
             bool transactionsRefs,
             bool budgetsRefs,
+            bool recurringTransactionsRefs,
           })
         > {
   $$CategoriesTableTableManager(_$AppDatabase db, $CategoriesTable table)
@@ -3958,12 +4099,14 @@ class $$CategoriesTableTableManager
                 parentId = false,
                 transactionsRefs = false,
                 budgetsRefs = false,
+                recurringTransactionsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (transactionsRefs) db.transactions,
                     if (budgetsRefs) db.budgets,
+                    if (recurringTransactionsRefs) db.recurringTransactions,
                   ],
                   addJoins:
                       <
@@ -4042,6 +4185,27 @@ class $$CategoriesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (recurringTransactionsRefs)
+                        await $_getPrefetchedData<
+                          Category,
+                          $CategoriesTable,
+                          RecurringTransaction
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CategoriesTableReferences
+                              ._recurringTransactionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CategoriesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).recurringTransactionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.categoryId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -4066,6 +4230,7 @@ typedef $$CategoriesTableProcessedTableManager =
         bool parentId,
         bool transactionsRefs,
         bool budgetsRefs,
+        bool recurringTransactionsRefs,
       })
     >;
 typedef $$TransactionsTableCreateCompanionBuilder =
@@ -4162,31 +4327,6 @@ final class $$TransactionsTableReferences
 
     final cache = $_typedResult.readTableOrNull(
       _transactionTagsRefsTable($_db),
-    );
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<
-    $RecurringTransactionsTable,
-    List<RecurringTransaction>
-  >
-  _recurringTransactionsRefsTable(_$AppDatabase db) =>
-      MultiTypedResultKey.fromTable(
-        db.recurringTransactions,
-        aliasName: 'transactions__id__recurring_transactions__transaction_id',
-      );
-
-  $$RecurringTransactionsTableProcessedTableManager
-  get recurringTransactionsRefs {
-    final manager = $$RecurringTransactionsTableTableManager(
-      $_db,
-      $_db.recurringTransactions,
-    ).filter((f) => f.transactionId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(
-      _recurringTransactionsRefsTable($_db),
     );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
@@ -4325,32 +4465,6 @@ class $$TransactionsTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
-    return f(composer);
-  }
-
-  Expression<bool> recurringTransactionsRefs(
-    Expression<bool> Function($$RecurringTransactionsTableFilterComposer f) f,
-  ) {
-    final $$RecurringTransactionsTableFilterComposer composer =
-        $composerBuilder(
-          composer: this,
-          getCurrentColumn: (t) => t.id,
-          referencedTable: $db.recurringTransactions,
-          getReferencedColumn: (t) => t.transactionId,
-          builder:
-              (
-                joinBuilder, {
-                $addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer,
-              }) => $$RecurringTransactionsTableFilterComposer(
-                $db: $db,
-                $table: $db.recurringTransactions,
-                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-                joinBuilder: joinBuilder,
-                $removeJoinBuilderFromRootComposer:
-                    $removeJoinBuilderFromRootComposer,
-              ),
-        );
     return f(composer);
   }
 }
@@ -4586,32 +4700,6 @@ class $$TransactionsTableAnnotationComposer
     );
     return f(composer);
   }
-
-  Expression<T> recurringTransactionsRefs<T extends Object>(
-    Expression<T> Function($$RecurringTransactionsTableAnnotationComposer a) f,
-  ) {
-    final $$RecurringTransactionsTableAnnotationComposer composer =
-        $composerBuilder(
-          composer: this,
-          getCurrentColumn: (t) => t.id,
-          referencedTable: $db.recurringTransactions,
-          getReferencedColumn: (t) => t.transactionId,
-          builder:
-              (
-                joinBuilder, {
-                $addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer,
-              }) => $$RecurringTransactionsTableAnnotationComposer(
-                $db: $db,
-                $table: $db.recurringTransactions,
-                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-                joinBuilder: joinBuilder,
-                $removeJoinBuilderFromRootComposer:
-                    $removeJoinBuilderFromRootComposer,
-              ),
-        );
-    return f(composer);
-  }
 }
 
 class $$TransactionsTableTableManager
@@ -4632,7 +4720,6 @@ class $$TransactionsTableTableManager
             bool categoryId,
             bool transferAccountId,
             bool transactionTagsRefs,
-            bool recurringTransactionsRefs,
           })
         > {
   $$TransactionsTableTableManager(_$AppDatabase db, $TransactionsTable table)
@@ -4704,13 +4791,11 @@ class $$TransactionsTableTableManager
                 categoryId = false,
                 transferAccountId = false,
                 transactionTagsRefs = false,
-                recurringTransactionsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (transactionTagsRefs) db.transactionTags,
-                    if (recurringTransactionsRefs) db.recurringTransactions,
                   ],
                   addJoins:
                       <
@@ -4799,27 +4884,6 @@ class $$TransactionsTableTableManager
                               ),
                           typedResults: items,
                         ),
-                      if (recurringTransactionsRefs)
-                        await $_getPrefetchedData<
-                          Transaction,
-                          $TransactionsTable,
-                          RecurringTransaction
-                        >(
-                          currentTable: table,
-                          referencedTable: $$TransactionsTableReferences
-                              ._recurringTransactionsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$TransactionsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).recurringTransactionsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.transactionId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
                     ];
                   },
                 );
@@ -4845,7 +4909,6 @@ typedef $$TransactionsTableProcessedTableManager =
         bool categoryId,
         bool transferAccountId,
         bool transactionTagsRefs,
-        bool recurringTransactionsRefs,
       })
     >;
 typedef $$TagsTableCreateCompanionBuilder =
@@ -5759,7 +5822,12 @@ typedef $$BudgetsTableProcessedTableManager =
 typedef $$RecurringTransactionsTableCreateCompanionBuilder =
     RecurringTransactionsCompanion Function({
       Value<int> id,
-      required int transactionId,
+      required double amount,
+      required TransactionType type,
+      required int accountId,
+      Value<int?> categoryId,
+      Value<int?> transferAccountId,
+      Value<String?> note,
       required RecurringFrequency frequency,
       required DateTime nextRun,
       Value<bool> enabled,
@@ -5767,7 +5835,12 @@ typedef $$RecurringTransactionsTableCreateCompanionBuilder =
 typedef $$RecurringTransactionsTableUpdateCompanionBuilder =
     RecurringTransactionsCompanion Function({
       Value<int> id,
-      Value<int> transactionId,
+      Value<double> amount,
+      Value<TransactionType> type,
+      Value<int> accountId,
+      Value<int?> categoryId,
+      Value<int?> transferAccountId,
+      Value<String?> note,
       Value<RecurringFrequency> frequency,
       Value<DateTime> nextRun,
       Value<bool> enabled,
@@ -5786,18 +5859,51 @@ final class $$RecurringTransactionsTableReferences
     super.$_typedResult,
   );
 
-  static $TransactionsTable _transactionIdTable(_$AppDatabase db) => db
-      .transactions
-      .createAlias('recurring_transactions__transaction_id__transactions__id');
+  static $AccountsTable _accountIdTable(_$AppDatabase db) => db.accounts
+      .createAlias('recurring_transactions__account_id__accounts__id');
 
-  $$TransactionsTableProcessedTableManager get transactionId {
-    final $_column = $_itemColumn<int>('transaction_id')!;
+  $$AccountsTableProcessedTableManager get accountId {
+    final $_column = $_itemColumn<int>('account_id')!;
 
-    final manager = $$TransactionsTableTableManager(
+    final manager = $$AccountsTableTableManager(
       $_db,
-      $_db.transactions,
+      $_db.accounts,
     ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_transactionIdTable($_db));
+    final item = $_typedResult.readTableOrNull(_accountIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $CategoriesTable _categoryIdTable(_$AppDatabase db) => db.categories
+      .createAlias('recurring_transactions__category_id__categories__id');
+
+  $$CategoriesTableProcessedTableManager? get categoryId {
+    final $_column = $_itemColumn<int>('category_id');
+    if ($_column == null) return null;
+    final manager = $$CategoriesTableTableManager(
+      $_db,
+      $_db.categories,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_categoryIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $AccountsTable _transferAccountIdTable(_$AppDatabase db) => db.accounts
+      .createAlias('recurring_transactions__transfer_account_id__accounts__id');
+
+  $$AccountsTableProcessedTableManager? get transferAccountId {
+    final $_column = $_itemColumn<int>('transfer_account_id');
+    if ($_column == null) return null;
+    final manager = $$AccountsTableTableManager(
+      $_db,
+      $_db.accounts,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_transferAccountIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -5819,6 +5925,22 @@ class $$RecurringTransactionsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<double> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<TransactionType, TransactionType, int>
+  get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnWithTypeConverterFilters<RecurringFrequency, RecurringFrequency, int>
   get frequency => $composableBuilder(
     column: $table.frequency,
@@ -5835,20 +5957,66 @@ class $$RecurringTransactionsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  $$TransactionsTableFilterComposer get transactionId {
-    final $$TransactionsTableFilterComposer composer = $composerBuilder(
+  $$AccountsTableFilterComposer get accountId {
+    final $$AccountsTableFilterComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.transactionId,
-      referencedTable: $db.transactions,
+      getCurrentColumn: (t) => t.accountId,
+      referencedTable: $db.accounts,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$TransactionsTableFilterComposer(
+          }) => $$AccountsTableFilterComposer(
             $db: $db,
-            $table: $db.transactions,
+            $table: $db.accounts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CategoriesTableFilterComposer get categoryId {
+    final $$CategoriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.categoryId,
+      referencedTable: $db.categories,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CategoriesTableFilterComposer(
+            $db: $db,
+            $table: $db.categories,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AccountsTableFilterComposer get transferAccountId {
+    final $$AccountsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.transferAccountId,
+      referencedTable: $db.accounts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AccountsTableFilterComposer(
+            $db: $db,
+            $table: $db.accounts,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -5873,6 +6041,21 @@ class $$RecurringTransactionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get frequency => $composableBuilder(
     column: $table.frequency,
     builder: (column) => ColumnOrderings(column),
@@ -5888,20 +6071,66 @@ class $$RecurringTransactionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  $$TransactionsTableOrderingComposer get transactionId {
-    final $$TransactionsTableOrderingComposer composer = $composerBuilder(
+  $$AccountsTableOrderingComposer get accountId {
+    final $$AccountsTableOrderingComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.transactionId,
-      referencedTable: $db.transactions,
+      getCurrentColumn: (t) => t.accountId,
+      referencedTable: $db.accounts,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$TransactionsTableOrderingComposer(
+          }) => $$AccountsTableOrderingComposer(
             $db: $db,
-            $table: $db.transactions,
+            $table: $db.accounts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CategoriesTableOrderingComposer get categoryId {
+    final $$CategoriesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.categoryId,
+      referencedTable: $db.categories,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CategoriesTableOrderingComposer(
+            $db: $db,
+            $table: $db.categories,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AccountsTableOrderingComposer get transferAccountId {
+    final $$AccountsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.transferAccountId,
+      referencedTable: $db.accounts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AccountsTableOrderingComposer(
+            $db: $db,
+            $table: $db.accounts,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -5924,6 +6153,15 @@ class $$RecurringTransactionsTableAnnotationComposer
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
+  GeneratedColumn<double> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<TransactionType, int> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
   GeneratedColumnWithTypeConverter<RecurringFrequency, int> get frequency =>
       $composableBuilder(column: $table.frequency, builder: (column) => column);
 
@@ -5933,20 +6171,66 @@ class $$RecurringTransactionsTableAnnotationComposer
   GeneratedColumn<bool> get enabled =>
       $composableBuilder(column: $table.enabled, builder: (column) => column);
 
-  $$TransactionsTableAnnotationComposer get transactionId {
-    final $$TransactionsTableAnnotationComposer composer = $composerBuilder(
+  $$AccountsTableAnnotationComposer get accountId {
+    final $$AccountsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.transactionId,
-      referencedTable: $db.transactions,
+      getCurrentColumn: (t) => t.accountId,
+      referencedTable: $db.accounts,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$TransactionsTableAnnotationComposer(
+          }) => $$AccountsTableAnnotationComposer(
             $db: $db,
-            $table: $db.transactions,
+            $table: $db.accounts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CategoriesTableAnnotationComposer get categoryId {
+    final $$CategoriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.categoryId,
+      referencedTable: $db.categories,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CategoriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.categories,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AccountsTableAnnotationComposer get transferAccountId {
+    final $$AccountsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.transferAccountId,
+      referencedTable: $db.accounts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AccountsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.accounts,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -5970,7 +6254,11 @@ class $$RecurringTransactionsTableTableManager
           $$RecurringTransactionsTableUpdateCompanionBuilder,
           (RecurringTransaction, $$RecurringTransactionsTableReferences),
           RecurringTransaction,
-          PrefetchHooks Function({bool transactionId})
+          PrefetchHooks Function({
+            bool accountId,
+            bool categoryId,
+            bool transferAccountId,
+          })
         > {
   $$RecurringTransactionsTableTableManager(
     _$AppDatabase db,
@@ -5997,13 +6285,23 @@ class $$RecurringTransactionsTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                Value<int> transactionId = const Value.absent(),
+                Value<double> amount = const Value.absent(),
+                Value<TransactionType> type = const Value.absent(),
+                Value<int> accountId = const Value.absent(),
+                Value<int?> categoryId = const Value.absent(),
+                Value<int?> transferAccountId = const Value.absent(),
+                Value<String?> note = const Value.absent(),
                 Value<RecurringFrequency> frequency = const Value.absent(),
                 Value<DateTime> nextRun = const Value.absent(),
                 Value<bool> enabled = const Value.absent(),
               }) => RecurringTransactionsCompanion(
                 id: id,
-                transactionId: transactionId,
+                amount: amount,
+                type: type,
+                accountId: accountId,
+                categoryId: categoryId,
+                transferAccountId: transferAccountId,
+                note: note,
                 frequency: frequency,
                 nextRun: nextRun,
                 enabled: enabled,
@@ -6011,13 +6309,23 @@ class $$RecurringTransactionsTableTableManager
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                required int transactionId,
+                required double amount,
+                required TransactionType type,
+                required int accountId,
+                Value<int?> categoryId = const Value.absent(),
+                Value<int?> transferAccountId = const Value.absent(),
+                Value<String?> note = const Value.absent(),
                 required RecurringFrequency frequency,
                 required DateTime nextRun,
                 Value<bool> enabled = const Value.absent(),
               }) => RecurringTransactionsCompanion.insert(
                 id: id,
-                transactionId: transactionId,
+                amount: amount,
+                type: type,
+                accountId: accountId,
+                categoryId: categoryId,
+                transferAccountId: transferAccountId,
+                note: note,
                 frequency: frequency,
                 nextRun: nextRun,
                 enabled: enabled,
@@ -6030,49 +6338,84 @@ class $$RecurringTransactionsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({transactionId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (transactionId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.transactionId,
-                                referencedTable:
-                                    $$RecurringTransactionsTableReferences
-                                        ._transactionIdTable(db),
-                                referencedColumn:
-                                    $$RecurringTransactionsTableReferences
-                                        ._transactionIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
+          prefetchHooksCallback:
+              ({
+                accountId = false,
+                categoryId = false,
+                transferAccountId = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (accountId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.accountId,
+                                    referencedTable:
+                                        $$RecurringTransactionsTableReferences
+                                            ._accountIdTable(db),
+                                    referencedColumn:
+                                        $$RecurringTransactionsTableReferences
+                                            ._accountIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (categoryId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.categoryId,
+                                    referencedTable:
+                                        $$RecurringTransactionsTableReferences
+                                            ._categoryIdTable(db),
+                                    referencedColumn:
+                                        $$RecurringTransactionsTableReferences
+                                            ._categoryIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (transferAccountId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.transferAccountId,
+                                    referencedTable:
+                                        $$RecurringTransactionsTableReferences
+                                            ._transferAccountIdTable(db),
+                                    referencedColumn:
+                                        $$RecurringTransactionsTableReferences
+                                            ._transferAccountIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -6089,7 +6432,11 @@ typedef $$RecurringTransactionsTableProcessedTableManager =
       $$RecurringTransactionsTableUpdateCompanionBuilder,
       (RecurringTransaction, $$RecurringTransactionsTableReferences),
       RecurringTransaction,
-      PrefetchHooks Function({bool transactionId})
+      PrefetchHooks Function({
+        bool accountId,
+        bool categoryId,
+        bool transferAccountId,
+      })
     >;
 typedef $$SettingsTableCreateCompanionBuilder =
     SettingsCompanion Function({
